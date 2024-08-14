@@ -1,6 +1,7 @@
 package com.memeki.reviewhome.postAddress.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,11 +22,11 @@ public class PostAddressController {
     public String test() {
         return new String();
     }
-    
 
     @PostMapping(value = "/search")
-    public SearchAddressDto.Response searchAddress(
+    public ResponseEntity<SearchAddressDto.Response> searchAddress(
             @RequestBody SearchAddressDto.Request addressInfo) throws Exception {
-        return postAddressService.findAddress(addressInfo);
+        SearchAddressDto.Response response = postAddressService.findAddress(addressInfo);
+        return ResponseEntity.ok(response);
     }
 }
