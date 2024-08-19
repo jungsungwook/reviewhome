@@ -15,7 +15,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -38,13 +42,15 @@ public class WebSecurityConfigure {
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 // httpBasic, csrf, formLogin, rememberMe, logout, session disable
                 http
-                                .cors()
-                                .and()
-                                .httpBasic().disable()
-                                .csrf().disable()
-                                .formLogin().disable()
-                                .rememberMe().disable()
-                                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .httpBasic(AbstractHttpConfigurer::disable)
+                                .csrf(AbstractHttpConfigurer::disable)
+                                .formLogin(form -> form
+                                                .disable()
+                                )
+                                .rememberMe(AbstractHttpConfigurer::disable)
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
                 // 요청에 대한 권한 설정
                 http.authorizeRequests(requests -> requests
@@ -53,20 +59,18 @@ public class WebSecurityConfigure {
 
                 // oauth2Login
                 http
-                                .oauth2Login() // 소셜 로그인 페이지 없음
-                                .loginPage("/api/auth/403")
-                                .authorizationEndpoint()
-                                .baseUri("/oauth2/authorize")
-                                .authorizationRequestRepository(cookieAuthorizationRequestRepository)
-                                .and()
-                                .redirectionEndpoint()
-                                .baseUri("/oauth2/callback/*")
-                                .and()
-                                .userInfoEndpoint()
-                                .userService(customOAuth2UserService)
-                                .and()
-                                .successHandler(oAuth2AuthenticationSuccessHandler)
-                                .failureHandler(oAuth2AuthenticationFailureHandler);
+                                .oauth2Login(oauth2 -> oauth2
+                                                .loginPage("/api/auth/403")
+                                                .authorizationEndpoint(authEndpoint -> authEndpoint
+                                                                .baseUri("/oauth2/authorize")
+                                                                .authorizationRequestRepository(
+                                                                                cookieAuthorizationRequestRepository))
+                                                .redirectionEndpoint(redirEndpoint -> redirEndpoint
+                                                                .baseUri("/oauth2/callback/*"))
+                                                .userInfoEndpoint(userInfo -> userInfo
+                                                                .userService(customOAuth2UserService))
+                                                .successHandler(oAuth2AuthenticationSuccessHandler)
+                                                .failureHandler(oAuth2AuthenticationFailureHandler));
 
                 // http.logout()
                 // .clearAuthentication(true)
