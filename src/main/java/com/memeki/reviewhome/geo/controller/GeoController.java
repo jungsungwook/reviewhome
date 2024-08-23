@@ -27,7 +27,6 @@ public class GeoController {
 
     @GetMapping("/features")
     public ResponseEntity<GeoFeaturesResponseDto> getFeatures() throws Exception {
-        geoFeaturesService.updateGeoFeatures();
         GeoFeaturesResponseDto responseDto = new GeoFeaturesResponseDto();
         responseDto.setContents(geoFeaturesService.getAllFeatures());
         return ResponseEntity.ok(responseDto);
