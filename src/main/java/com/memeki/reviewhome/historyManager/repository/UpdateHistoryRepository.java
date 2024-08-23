@@ -10,4 +10,5 @@ public interface UpdateHistoryRepository extends JpaRepository<UpdateHistory, In
     List<UpdateHistory> findAll();
     List<UpdateHistory> findByType(String type);
     List<UpdateHistory> findByUuid(String uuid);
+    UpdateHistory findTopByTypeOrderByCreatedAtDesc(String type);
 }
