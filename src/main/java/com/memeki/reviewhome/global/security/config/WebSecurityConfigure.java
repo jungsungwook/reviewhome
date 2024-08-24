@@ -86,7 +86,7 @@ public class WebSecurityConfigure {
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
                 configuration.setAllowedOrigins(Arrays.asList("https://duriburn.com", "https://www.duriburn.com",
-                                "hhttp://localhost:3000")); // 클라이언트 도메인을 지정
+                                "http://localhost:3000")); // 클라이언트 도메인을 지정
                 configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
                 configuration.setExposedHeaders(Arrays.asList("x-auth-token"));
