@@ -24,10 +24,9 @@ public class AuthApiController {
     private AuthService authService;
 
     @GetMapping("/403")
-    public String forbidden() throws Exception{
+    public String forbidden() throws Exception {
         throw new DefaultException(ErrorCode.FORBIDDEN);
     }
-    
 
     @GetMapping(value = "/signin")
     public String getMethodName(@RequestParam String param) throws Exception {
@@ -42,9 +41,23 @@ public class AuthApiController {
         return param + "signup";
     }
 
+    @GetMapping(value = "/signout")
+    @PreAuthorize("isAuthenticated()")
+    public String signOut(
+            HttpServletRequest request,
+            HttpServletResponse response) throws Exception {
+        // 쿠키값 "token"을 삭제
+        authService.signOut(
+                request,
+                response);
+
+        return "redirect:/";
+    }
+
     @GetMapping(value = "/check")
     @PreAuthorize("isAuthenticated()")
-    public CheckAuthenticationResponseDto checkAuthentication(HttpServletRequest request, HttpServletResponse response) {
+    public CheckAuthenticationResponseDto checkAuthentication(HttpServletRequest request,
+            HttpServletResponse response) {
         // 성공 시 200
         response.setStatus(HttpServletResponse.SC_OK);
         CheckAuthenticationResponseDto responseDto = new CheckAuthenticationResponseDto();
@@ -52,6 +65,5 @@ public class AuthApiController {
         responseDto.setStatus(HttpServletResponse.SC_OK);
         return responseDto;
     }
-    
 
 }
