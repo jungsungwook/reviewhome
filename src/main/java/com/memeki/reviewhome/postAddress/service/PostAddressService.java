@@ -88,7 +88,7 @@ public class PostAddressService {
                     response.setDongNm(dongNm);
                     response.setStatusCode(400);
                     return response;
-                }else {
+                } else {
                     PostAddressInfo postAddressInfo = postAddressInfoRepository
                             .findPostAddressInfoByDongNm(addressInfo.getDongNm());
                     GeoLocation geoLocation = geoLocationRepository
@@ -212,6 +212,8 @@ public class PostAddressService {
                     continue;
                 }
                 int dong = extractDongNumber(allItems.get(i).getDongNm());
+                if (dong == 0)
+                    continue;
                 dongNm.add(Integer.toString(dong));
             }
 
@@ -270,6 +272,8 @@ public class PostAddressService {
                     continue;
                 }
                 String dongNum = Integer.toString(extractDongNumber(allItems.get(i).getDongNm()));
+                if (dongNum == "" || dongNum == "0")
+                    continue;
                 allItems.get(i).setDongNm(dongNum);
                 postAddressInfo.copyFromItemDto(allItems.get(i));
                 PostAddressInfo savePostAddressInfo = postAddressInfoRepository.save(postAddressInfo);
