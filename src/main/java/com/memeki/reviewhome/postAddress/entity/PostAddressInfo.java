@@ -9,11 +9,13 @@ import com.memeki.reviewhome.postAddress.dto.GetBrTitleInfoResponseDto.ItemDto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 @Entity
 @Table(name = "post_address_info")
 @Getter
+@Setter
 @ToString()
 @NoArgsConstructor
 public class PostAddressInfo {
@@ -107,5 +109,25 @@ public class PostAddressInfo {
         this.rideUseElvtCnt = item.getRideUseElvtCnt();
         this.bldNm = item.getBldNm();
         this.dongNm = item.getDongNm();
+    }
+
+    public ItemDto toItemDto() {
+        return ItemDto.builder()
+                .mainPurpsCdNm(mainPurpsCdNm)
+                .hhldCnt(hhldCnt)
+                .grndFlrCnt(grndFlrCnt)
+                .ugrndFlrCnt(ugrndFlrCnt)
+                .indrAutoUtcnt(indrAutoUtcnt)
+                .oudrAutoUtcnt(oudrAutoUtcnt)
+                .indrMechUtcnt(indrMechUtcnt)
+                .oudrMechUtcnt(oudrMechUtcnt)
+                .stcnsDay(stcnsDay)
+                .useAprDay(useAprDay)
+                .newPlatPlc(newPlatPlc)
+                .platPlc(platPlc)
+                .rideUseElvtCnt(rideUseElvtCnt)
+                .bldNm(bldNm)
+                .dongNm(dongNm)
+                .build();
     }
 }

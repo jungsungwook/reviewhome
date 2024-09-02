@@ -1,5 +1,7 @@
 package com.memeki.reviewhome.postAddress.dto;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -60,5 +62,6 @@ public class SearchAddressDto {
         private GetBrTitleInfoResponseDto.ItemDto item;
         private String point_x;
         private String point_y;
+        private List<String> dongNm;
     }
 }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.memeki.reviewhome.postAddress.utils.ItemOrItemListDeserializer;
 import com.memeki.reviewhome.postAddress.utils.ItemsOrStringDeserializer;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -77,6 +78,7 @@ public class GetBrTitleInfoResponseDto {
 
     @Getter
     @Setter
+    @Builder
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ItemDto {
