@@ -97,6 +97,31 @@ public class GetBrTitleInfoResponseDto {
         private int rideUseElvtCnt;
         private String bldNm;
         private String dongNm;
+        private String bun;
+        private String ji;
+
+        @Override
+        public String toString() {
+            return "ItemDto{" +
+                    "mainPurpsCdNm='" + mainPurpsCdNm + '\'' +
+                    ", hhldCnt=" + hhldCnt +
+                    ", grndFlrCnt=" + grndFlrCnt +
+                    ", ugrndFlrCnt=" + ugrndFlrCnt +
+                    ", indrAutoUtcnt=" + indrAutoUtcnt +
+                    ", oudrAutoUtcnt=" + oudrAutoUtcnt +
+                    ", indrMechUtcnt=" + indrMechUtcnt +
+                    ", oudrMechUtcnt=" + oudrMechUtcnt +
+                    ", stcnsDay='" + stcnsDay + '\'' +
+                    ", useAprDay='" + useAprDay + '\'' +
+                    ", newPlatPlc='" + newPlatPlc + '\'' +
+                    ", platPlc='" + platPlc + '\'' +
+                    ", rideUseElvtCnt=" + rideUseElvtCnt +
+                    ", bldNm='" + bldNm + '\'' +
+                    ", dongNm='" + dongNm + '\'' +
+                    ", bun='" + bun + '\'' +
+                    ", ji='" + ji + '\'' +
+                    '}';
+        }
 
         @JsonCreator
         public ItemDto(@JsonProperty("mainPurpsCdNm") String mainPurpsCdNm,
@@ -113,7 +138,9 @@ public class GetBrTitleInfoResponseDto {
                     @JsonProperty("platPlc") String platPlc,
                     @JsonProperty("rideUseElvtCnt") int rideUseElvtCnt,
                     @JsonProperty("bldNm") String bldNm,
-                    @JsonProperty("dongNm") String dongNm
+                    @JsonProperty("dongNm") String dongNm,
+                    @JsonProperty("bun") String bun,
+                    @JsonProperty("ji") String ji
                     ) {
             this.mainPurpsCdNm = mainPurpsCdNm;
             this.hhldCnt = hhldCnt;
@@ -130,6 +157,8 @@ public class GetBrTitleInfoResponseDto {
             this.rideUseElvtCnt = rideUseElvtCnt;
             this.bldNm = bldNm;
             this.dongNm = dongNm;
+            this.bun = bun;
+            this.ji = ji;
         }
     }
 }

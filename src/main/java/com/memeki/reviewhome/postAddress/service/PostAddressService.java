@@ -28,6 +28,9 @@ import com.memeki.reviewhome.postAddress.repository.PostAddressRepository;
 /*
  * @Todo
  * 1. 모든 로직을 세분화하여 각각의 메소드로 분리해야함.
+ * 2. 현재 postAddress를 우선 저장하는 과정에서 여러개의 주소지를 저장하는 과정에 문제가 있음.
+ *    예를들면 사용자가 검색한 주소는 거마로 41인데 저장한 결과는 거마로 43...
+ *    따라서 이를 해결하기 위해 사용자가 선택한 주소지를 받을 때 newPlatPlc도 같이 받아와야함.
  */
 @Service
 public class PostAddressService {
@@ -167,6 +170,8 @@ public class PostAddressService {
                     continue;
                 }
                 int dongNum = extractDongNumber(items.get(i).getDongNm());
+                if (dongNum == 0)
+                    continue;
                 items.get(i).setDongNm(Integer.toString(dongNum));
             }
 
@@ -195,9 +200,20 @@ public class PostAddressService {
 
         /*
          * 우선 postAddress를 저장한다.
-         * NewPlatPlc는 동이 여러개인지 여부와 상관없이 첫번째 데이터의 NewPlatPlc를 저장한다.
          */
-        String newPlatPlc = allItems.get(0).getNewPlatPlc();
+        String newPlatPlc = "";
+        for(int i = 0; i < allItems.size(); i++) {
+            if (allItems.get(i).getNewPlatPlc() != null && !allItems.get(i).getNewPlatPlc().isBlank() && !allItems.get(i).getNewPlatPlc().isEmpty()) {
+                String target = allItems.get(i).getNewPlatPlc().trim();
+                if(target.equals(addressInfo.getNewPlatPlc())) {
+                    newPlatPlc = target;
+                    continue;
+                }
+            }
+        }
+        if(newPlatPlc.equals("")) {
+            newPlatPlc = allItems.get(0).getNewPlatPlc();
+        }
         postAddress.setNewPlatPlc(newPlatPlc);
 
         /*
@@ -272,7 +288,7 @@ public class PostAddressService {
                     continue;
                 }
                 String dongNum = Integer.toString(extractDongNumber(allItems.get(i).getDongNm()));
-                if (dongNum == "" || dongNum == "0")
+                if (dongNum.equals("") || dongNum.equals("0"))
                     continue;
                 allItems.get(i).setDongNm(dongNum);
                 postAddressInfo.copyFromItemDto(allItems.get(i));
@@ -287,7 +303,15 @@ public class PostAddressService {
                     throw new DefaultException(ErrorCode.NOT_FOUND);
                 }
             }
-            return null;
+            
+            // 이제 선택한 동의 정보를 가져온다
+            PostAddressInfo postAddressInfo = postAddressInfoRepository.findPostAddressInfoByDongNm(addressInfo.getDongNm());
+            GeoLocation geoLocation = geoLocationRepository.findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
+            response.setItem(postAddressInfo.toItemDto());
+            response.setPoint_x(geoLocation.getPointX());
+            response.setPoint_y(geoLocation.getPointY());
+            response.setStatusCode(200);
+            return response;
         }
     }
 
