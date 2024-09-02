@@ -202,16 +202,22 @@ public class PostAddressService {
          * 우선 postAddress를 저장한다.
          */
         String newPlatPlc = "";
-        for(int i = 0; i < allItems.size(); i++) {
-            if (allItems.get(i).getNewPlatPlc() != null && !allItems.get(i).getNewPlatPlc().isBlank() && !allItems.get(i).getNewPlatPlc().isEmpty()) {
+        int sameCount = 0;
+        for (int i = 0; i < allItems.size(); i++) {
+            System.out.println(allItems.get(i).toString());
+            if (allItems.get(i).getNewPlatPlc() != null && !allItems.get(i).getNewPlatPlc().isBlank()
+                    && !allItems.get(i).getNewPlatPlc().isEmpty()) {
                 String target = allItems.get(i).getNewPlatPlc().trim();
-                if(target.equals(addressInfo.getNewPlatPlc())) {
+                if (target.equals(addressInfo.getNewPlatPlc())) {
                     newPlatPlc = target;
-                    continue;
+                    sameCount += 1;
                 }
             }
         }
-        if(newPlatPlc.equals("")) {
+        postAddress.setMultiple(
+                sameCount > 1 ? true : false);
+                
+        if (newPlatPlc.equals("")) {
             newPlatPlc = allItems.get(0).getNewPlatPlc();
         }
         postAddress.setNewPlatPlc(newPlatPlc);
@@ -303,10 +309,12 @@ public class PostAddressService {
                     throw new DefaultException(ErrorCode.NOT_FOUND);
                 }
             }
-            
+
             // 이제 선택한 동의 정보를 가져온다
-            PostAddressInfo postAddressInfo = postAddressInfoRepository.findPostAddressInfoByDongNm(addressInfo.getDongNm());
-            GeoLocation geoLocation = geoLocationRepository.findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
+            PostAddressInfo postAddressInfo = postAddressInfoRepository
+                    .findPostAddressInfoByDongNm(addressInfo.getDongNm());
+            GeoLocation geoLocation = geoLocationRepository
+                    .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
             response.setItem(postAddressInfo.toItemDto());
             response.setPoint_x(geoLocation.getPointX());
             response.setPoint_y(geoLocation.getPointY());
