@@ -20,6 +20,7 @@ public class SearchAddressDto {
         private String bun;
         private String ji;
         private String dongNm;
+        private String newPlatPlc;
 
         @JsonCreator
         public Request(
@@ -27,12 +28,15 @@ public class SearchAddressDto {
                 @JsonProperty("bjdongCd") String bjdongCd,
                 @JsonProperty("bun") String bun,
                 @JsonProperty("ji") String ji,
-                @JsonProperty("dongNm") String dongNm) {
+                @JsonProperty("dongNm") String dongNm,
+                @JsonProperty("newPlatPlc") String newPlatPlc
+                ) {
             this.sigunguCd = sigunguCd;
             this.bjdongCd = bjdongCd;
             this.bun = adjustBunValue(bun);
             this.ji = adjustJiValue(ji);
             this.dongNm = dongNm;
+            this.newPlatPlc = newPlatPlc;
         }
 
         private String adjustBunValue(String bun) {
