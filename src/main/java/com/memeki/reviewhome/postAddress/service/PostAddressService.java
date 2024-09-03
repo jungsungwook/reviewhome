@@ -61,63 +61,58 @@ public class PostAddressService {
      * @throws Exception
      */
     public SearchAddressDto.Response findAddress(
-            SearchAddressDto.Request addressInfo) throws Exception {
-        try {
-            PostAddress postAddress = postAddressRepository.findPostAddressBySigunguCdAndBjdongCdAndBunAndJi(
-                    addressInfo.getSigunguCd(),
-                    addressInfo.getBjdongCd(),
-                    addressInfo.getBun(),
-                    addressInfo.getJi());
-            if (postAddress == null) {
-                return searchAddress(addressInfo);
-            }
-            if (postAddress.isMultiple()) {
-                if (addressInfo.getDongNm() == null) {
-                    List<PostAddressInfo> postAddressInfos = postAddressInfoRepository
-                            .findAllByPostAddressId(postAddress.getId());
-                    List<String> dongNm = new ArrayList<>();
-                    for (int i = 0; i < postAddressInfos.size(); i++) {
-                        dongNm.add(postAddressInfos.get(i).getDongNm());
-                    }
-                    Collections.sort(dongNm, new Comparator<String>() {
-                        @Override
-                        public int compare(String s1, String s2) {
-                            int number1 = extractDongNumber(s1);
-                            int number2 = extractDongNumber(s2);
-                            return Integer.compare(number1, number2);
-                        }
-                    });
-                    SearchAddressDto.Response response = new SearchAddressDto.Response();
-                    response.setDongNm(dongNm);
-                    response.setStatusCode(400);
-                    return response;
-                } else {
-                    PostAddressInfo postAddressInfo = postAddressInfoRepository
-                            .findPostAddressInfoByDongNm(addressInfo.getDongNm());
-                    GeoLocation geoLocation = geoLocationRepository
-                            .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
-                    SearchAddressDto.Response response = new SearchAddressDto.Response();
-                    response.setItem(postAddressInfo.toItemDto());
-                    response.setPoint_x(geoLocation.getPointX());
-                    response.setPoint_y(geoLocation.getPointY());
-                    response.setStatusCode(200);
-                    return response;
-                }
-            }
-            SearchAddressDto.Response response = new SearchAddressDto.Response();
-            PostAddressInfo postAddressInfo = postAddressInfoRepository
-                    .findPostAddressInfoByPostAddressId(postAddress.getId());
-            GeoLocation geoLocation = geoLocationRepository
-                    .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
-            response.setItem(postAddressInfo.toItemDto());
-            response.setPoint_x(geoLocation.getPointX());
-            response.setPoint_y(geoLocation.getPointY());
-            response.setStatusCode(200);
-            return response;
-        } catch (Exception e) {
-            e.printStackTrace();
+            SearchAddressDto.Request addressInfo) {
+        PostAddress postAddress = postAddressRepository.findPostAddressBySigunguCdAndBjdongCdAndBunAndJi(
+                addressInfo.getSigunguCd(),
+                addressInfo.getBjdongCd(),
+                addressInfo.getBun(),
+                addressInfo.getJi());
+        if (postAddress == null) {
+            return searchAddress(addressInfo);
         }
-        return null;
+        if (postAddress.isMultiple()) {
+            if (addressInfo.getDongNm() == null) {
+                List<PostAddressInfo> postAddressInfos = postAddressInfoRepository
+                        .findAllByPostAddressId(postAddress.getId());
+                List<String> dongNm = new ArrayList<>();
+                for (int i = 0; i < postAddressInfos.size(); i++) {
+                    dongNm.add(postAddressInfos.get(i).getDongNm());
+                }
+                Collections.sort(dongNm, new Comparator<String>() {
+                    @Override
+                    public int compare(String s1, String s2) {
+                        int number1 = extractDongNumber(s1);
+                        int number2 = extractDongNumber(s2);
+                        return Integer.compare(number1, number2);
+                    }
+                });
+                SearchAddressDto.Response response = new SearchAddressDto.Response();
+                response.setDongNm(dongNm);
+                response.setStatusCode(400);
+                return response;
+            } else {
+                PostAddressInfo postAddressInfo = postAddressInfoRepository
+                        .findPostAddressInfoByDongNm(addressInfo.getDongNm());
+                GeoLocation geoLocation = geoLocationRepository
+                        .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
+                SearchAddressDto.Response response = new SearchAddressDto.Response();
+                response.setItem(postAddressInfo.toItemDto());
+                response.setPoint_x(geoLocation.getPointX());
+                response.setPoint_y(geoLocation.getPointY());
+                response.setStatusCode(200);
+                return response;
+            }
+        }
+        SearchAddressDto.Response response = new SearchAddressDto.Response();
+        PostAddressInfo postAddressInfo = postAddressInfoRepository
+                .findPostAddressInfoByPostAddressId(postAddress.getId());
+        GeoLocation geoLocation = geoLocationRepository
+                .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
+        response.setItem(postAddressInfo.toItemDto());
+        response.setPoint_x(geoLocation.getPointX());
+        response.setPoint_y(geoLocation.getPointY());
+        response.setStatusCode(200);
+        return response;
     }
 
     /**
@@ -127,7 +122,8 @@ public class PostAddressService {
      * @param addressInfo
      * @throws Exception
      */
-    public SearchAddressDto.Response searchAddress(SearchAddressDto.Request addressInfo) throws Exception {
+    public SearchAddressDto.Response searchAddress(SearchAddressDto.Request addressInfo) {
+
         SearchAddressDto.Response response = new SearchAddressDto.Response();
         AtomicInteger pageNo = new AtomicInteger(1); // 페이지 번호 초기화
         int numOfRows = 10; // 페이지 당 결과 수
@@ -164,6 +160,9 @@ public class PostAddressService {
             if (totalCount == 0) {
                 totalCount = result.getResponse().getBody().getTotalCount();
             }
+            if (totalCount == 0) {
+                throw new DefaultException(ErrorCode.NOT_FOUND);
+            }
             // 동 이름은 숫자부분만 추출하여 String으로 저장
             for (int i = 0; i < items.size(); i++) {
                 if (items.get(i).getDongNm().isBlank() || items.get(i).getDongNm().isEmpty()) {
@@ -185,7 +184,6 @@ public class PostAddressService {
                 pageNo.incrementAndGet(); // 다음 페이지로 이동
             }
         }
-
         PostAddress postAddress = new PostAddress();
         postAddress.setSigunguCd(addressInfo.getSigunguCd());
         postAddress.setBjdongCd(addressInfo.getBjdongCd());
@@ -195,8 +193,8 @@ public class PostAddressService {
 
         if (allItems.size() == 0) {
             throw new DefaultException(ErrorCode.NOT_FOUND);
-        } else if (allItems.size() > 1) {
-            // throw new DefaultException(ErrorCode.MULTIPLE_RESULT);
+        }
+        if (dongNmList.size() > 1) {
             postAddress.setMultiple(true);
         }
 
@@ -210,6 +208,28 @@ public class PostAddressService {
                     && !allItems.get(i).getNewPlatPlc().isEmpty()) {
                 String target = allItems.get(i).getNewPlatPlc().trim();
                 if (target.equals(addressInfo.getNewPlatPlc())) {
+                    // 만약 bldNm, dongNm에 상가, 관리실 등이 포함되어있으면 제외
+                    /*
+                     * ItemDto{mainPurpsCdNm='공동주택', hhldCnt=0, grndFlrCnt=3, ugrndFlrCnt=0,
+                     * indrAutoUtcnt=0, oudrAutoUtcnt=0, indrMechUtcnt=0, oudrMechUtcnt=0,
+                     * stcnsDay='19970222', useAprDay='19990612', newPlatPlc=' 서울특별시 송파구 거마로9길 19',
+                     * platPlc='서울특별시 송파구 거여동 136번지', rideUseElvtCnt=0, bldNm='삼호아파트 상가동', dongNm='
+                     * ', bun='0136', ji='0000'}
+                     * 
+                     * ItemDto{mainPurpsCdNm='공동주택', hhldCnt=142, grndFlrCnt=19, ugrndFlrCnt=2,
+                     * indrAutoUtcnt=94, oudrAutoUtcnt=53, indrMechUtcnt=0, oudrMechUtcnt=0,
+                     * stcnsDay='19970222', useAprDay='19990612', newPlatPlc=' 서울특별시 송파구 거마로9길 19',
+                     * platPlc='서울특별시 송파구 거여동 136번지', rideUseElvtCnt=2, bldNm='삼호아파트 제101동',
+                     * dongNm=' ', bun='0136', ji='0000'}
+                     * sameCount = 2
+                     * 위와 같은 어이없는 사례도 있기 때문에 이렇게 처리해줘야함.
+                     */
+                    if (allItems.get(i).getBldNm().contains("상가") || allItems.get(i).getBldNm().contains("관리실")) {
+                        continue;
+                    }
+                    if (allItems.get(i).getDongNm().contains("상가") || allItems.get(i).getDongNm().contains("관리실")) {
+                        continue;
+                    }
                     newPlatPlc = target;
                     sameCount += 1;
                 }
@@ -303,7 +323,8 @@ public class PostAddressService {
                 PostAddressInfo savePostAddressInfo = postAddressInfoRepository.save(postAddressInfo);
 
                 // 좌표를 저장한다.
-                AddressToPointsResponseDto point = geoService.addressToPoints(newPlatPlc, savePostAddressInfo.getUuid(),
+                AddressToPointsResponseDto point = geoService.addressToPoints(newPlatPlc,
+                        savePostAddressInfo.getUuid(),
                         savePostAddress.getId(), Integer.toString(dongNum));
                 if (point.getStatusCode() == 404) {
                     postAddressRepository.delete(savePostAddress);
