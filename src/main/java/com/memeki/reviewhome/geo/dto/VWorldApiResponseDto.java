@@ -20,6 +20,13 @@ public class VWorldApiResponseDto {
 
     private ResponseDTO response;
 
+    @Override
+    public String toString() {
+        return "VWorldApiResponseDto{" +
+                "response=" + response.toString() +
+                '}';
+    }
+
     @Builder
     @JsonCreator
     public VWorldApiResponseDto(@JsonProperty("response") ResponseDTO response) {
@@ -50,6 +57,17 @@ public class VWorldApiResponseDto {
             this.page = page;
             this.result = result;
         }
+
+        @Override
+        public String toString() {
+            return "ResponseDTO{" +
+                    "service=" + service.toString() +
+                    ", status='" + status + '\'' +
+                    ", record=" + record.toString() +
+                    ", page=" + page.toString() +
+                    ", result=" + result.toString() +
+                    '}';
+        }
     }
 
     @Getter
@@ -73,6 +91,16 @@ public class VWorldApiResponseDto {
             this.operation = operation;
             this.time = time;
         }
+
+        @Override
+        public String toString() {
+            return "ServiceDTO{" +
+                    "name='" + name + '\'' +
+                    ", version='" + version + '\'' +
+                    ", operation='" + operation + '\'' +
+                    ", time='" + time + '\'' +
+                    '}';
+        }
     }
 
     @Getter
@@ -89,6 +117,14 @@ public class VWorldApiResponseDto {
                          @JsonProperty("current") String current) {
             this.total = total;
             this.current = current;
+        }
+
+        @Override
+        public String toString() {
+            return "RecordDTO{" +
+                    "total='" + total + '\'' +
+                    ", current='" + current + '\'' +
+                    '}';
         }
     }
 
@@ -110,6 +146,15 @@ public class VWorldApiResponseDto {
             this.current = current;
             this.size = size;
         }
+
+        @Override
+        public String toString() {
+            return "PageDTO{" +
+                    "total='" + total + '\'' +
+                    ", current='" + current + '\'' +
+                    ", size='" + size + '\'' +
+                    '}';
+        }
     }
 
     @Getter
@@ -130,6 +175,15 @@ public class VWorldApiResponseDto {
             this.type = type;
             this.items = items;
         }
+
+        @Override
+        public String toString() {
+            return "ResultDTO{" +
+                    "crs='" + crs + '\'' +
+                    ", type='" + type + '\'' +
+                    ", items=" + items.toString() +
+                    '}';
+        }
     }
 
     @Getter
@@ -149,6 +203,15 @@ public class VWorldApiResponseDto {
             this.id = id;
             this.address = address;
             this.point = point;
+        }
+
+        @Override
+        public String toString() {
+            return "ItemDTO{" +
+                    "id='" + id + '\'' +
+                    ", address=" + address.toString() +
+                    ", point=" + point.toString() +
+                    '}';
         }
     }
 
@@ -179,6 +242,18 @@ public class VWorldApiResponseDto {
             this.bldnm = bldnm;
             this.bldnmdc = bldnmdc;
         }
+
+        @Override
+        public String toString() {
+            return "AddressDTO{" +
+                    "zipcode='" + zipcode + '\'' +
+                    ", category='" + category + '\'' +
+                    ", road='" + road + '\'' +
+                    ", parcel='" + parcel + '\'' +
+                    ", bldnm='" + bldnm + '\'' +
+                    ", bldnmdc='" + bldnmdc + '\'' +
+                    '}';
+        }
     }
 
     @Getter
@@ -195,6 +270,14 @@ public class VWorldApiResponseDto {
                         @JsonProperty("y") String y) {
             this.x = x;
             this.y = y;
+        }
+
+        @Override
+        public String toString() {
+            return "PointDTO{" +
+                    "x='" + x + '\'' +
+                    ", y='" + y + '\'' +
+                    '}';
         }
     }
 }

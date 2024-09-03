@@ -72,6 +72,8 @@ public class GeoService {
                 // items가 비어있지 않은 경우 동 이름을 검사합니다.
                 for (VWorldApiResponseDto.ItemDTO item : items) {
                     String dongNum = Integer.toString(extractDongNumber(item.getAddress().getBldnmdc()));
+                    System.out.println("dongNum: " + dongNum);
+                    System.out.println("dongNm: " + dongNm);
                     if (dongNm == null || dongNm.equals(dongNum)) {
                         // 일치하는 동이 있는 경우 처리
                         point = item.getPoint();
