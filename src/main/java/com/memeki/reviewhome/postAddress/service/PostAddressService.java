@@ -28,9 +28,9 @@ import com.memeki.reviewhome.postAddress.repository.PostAddressRepository;
 /*
  * @Todo
  * 1. 모든 로직을 세분화하여 각각의 메소드로 분리해야함.
- * 2. 현재 postAddress를 우선 저장하는 과정에서 여러개의 주소지를 저장하는 과정에 문제가 있음.
- *    예를들면 사용자가 검색한 주소는 거마로 41인데 저장한 결과는 거마로 43...
- *    따라서 이를 해결하기 위해 사용자가 선택한 주소지를 받을 때 newPlatPlc도 같이 받아와야함.
+ * 2. DongNm에 대한 전처리가 부족함.
+ *    동 이름에는 1, 2, 3같은 알 수 없는 숫자와 관리실, 상가 등과 같은 단어가 포함되어있음.
+ *    현재는 100미만의 숫자는 제외하고 저장하도록 되어있음.
  */
 @Service
 public class PostAddressService {
@@ -134,7 +134,7 @@ public class PostAddressService {
         int totalCount = 0; // 총 결과 개수
         boolean allResultsFetched = false; // 모든 결과를 가져왔는지 여부
         List<GetBrTitleInfoResponseDto.ItemDto> allItems = new ArrayList<>(); // 모든 아이템을 저장할 리스트
-
+        List<String> dongNmList = new ArrayList<>();
         while (!allResultsFetched) {
             GetBrTitleInfoResponseDto result = webClient.get()
                     .uri(
@@ -170,8 +170,10 @@ public class PostAddressService {
                     continue;
                 }
                 int dongNum = extractDongNumber(items.get(i).getDongNm());
-                if (dongNum == 0)
+                if (dongNum < 100) {
                     continue;
+                }
+                dongNmList.add(Integer.toString(dongNum));
                 items.get(i).setDongNm(Integer.toString(dongNum));
             }
 
@@ -204,7 +206,6 @@ public class PostAddressService {
         String newPlatPlc = "";
         int sameCount = 0;
         for (int i = 0; i < allItems.size(); i++) {
-            System.out.println(allItems.get(i).toString());
             if (allItems.get(i).getNewPlatPlc() != null && !allItems.get(i).getNewPlatPlc().isBlank()
                     && !allItems.get(i).getNewPlatPlc().isEmpty()) {
                 String target = allItems.get(i).getNewPlatPlc().trim();
@@ -216,7 +217,7 @@ public class PostAddressService {
         }
         postAddress.setMultiple(
                 sameCount > 1 ? true : false);
-                
+
         if (newPlatPlc.equals("")) {
             newPlatPlc = allItems.get(0).getNewPlatPlc();
         }
@@ -227,19 +228,19 @@ public class PostAddressService {
          */
         if (postAddress.isMultiple() && addressInfo.getDongNm() == null) {
             response.setStatusCode(400);
-            List<String> dongNm = new ArrayList<>();
 
-            for (int i = 0; i < allItems.size(); i++) {
-                if (allItems.get(i).getDongNm().isBlank() || allItems.get(i).getDongNm().isEmpty()) {
-                    continue;
-                }
-                int dong = extractDongNumber(allItems.get(i).getDongNm());
-                if (dong == 0)
-                    continue;
-                dongNm.add(Integer.toString(dong));
-            }
+            // for (int i = 0; i < allItems.size(); i++) {
+            // if (allItems.get(i).getDongNm().isBlank() ||
+            // allItems.get(i).getDongNm().isEmpty()) {
+            // continue;
+            // }
+            // int dong = extractDongNumber(allItems.get(i).getDongNm());
+            // if (dong == 0)
+            // continue;
+            // dongNmList.add(Integer.toString(dong));
+            // }
 
-            Collections.sort(dongNm, new Comparator<String>() {
+            Collections.sort(dongNmList, new Comparator<String>() {
                 @Override
                 public int compare(String s1, String s2) {
                     int number1 = extractDongNumber(s1);
@@ -247,7 +248,7 @@ public class PostAddressService {
                     return Integer.compare(number1, number2);
                 }
             });
-            response.setDongNm(dongNm);
+            response.setDongNm(dongNmList);
             return response;
         }
         response.setDongNm(null);
@@ -293,16 +294,17 @@ public class PostAddressService {
                 if (allItems.get(i).getDongNm().isBlank() || allItems.get(i).getDongNm().isEmpty()) {
                     continue;
                 }
-                String dongNum = Integer.toString(extractDongNumber(allItems.get(i).getDongNm()));
-                if (dongNum.equals("") || dongNum.equals("0"))
+                int dongNum = extractDongNumber(allItems.get(i).getDongNm());
+                if (dongNum < 100) {
                     continue;
-                allItems.get(i).setDongNm(dongNum);
+                }
+                allItems.get(i).setDongNm(Integer.toString(dongNum));
                 postAddressInfo.copyFromItemDto(allItems.get(i));
                 PostAddressInfo savePostAddressInfo = postAddressInfoRepository.save(postAddressInfo);
 
                 // 좌표를 저장한다.
                 AddressToPointsResponseDto point = geoService.addressToPoints(newPlatPlc, savePostAddressInfo.getUuid(),
-                        savePostAddress.getId(), dongNum);
+                        savePostAddress.getId(), Integer.toString(dongNum));
                 if (point.getStatusCode() == 404) {
                     postAddressRepository.delete(savePostAddress);
                     postAddressInfoRepository.delete(savePostAddressInfo);
