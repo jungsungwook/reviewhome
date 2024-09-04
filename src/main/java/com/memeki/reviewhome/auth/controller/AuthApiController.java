@@ -74,6 +74,7 @@ public class AuthApiController {
         responseDto.setStatus(HttpServletResponse.SC_OK);
         responseDto.setUserId(user.getId());
         responseDto.setUserName(user.getName());
+        responseDto.setNickname(user.getNickname());
         return responseDto;
     }
 
