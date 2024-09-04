@@ -4,6 +4,7 @@ package com.memeki.reviewhome.auth.dto;
 @lombok.Setter
 @lombok.NoArgsConstructor
 public class CheckAuthenticationResponseDto {
-    private String message;
+    private long userId;
+    private String userName;
     private int status;
 }
