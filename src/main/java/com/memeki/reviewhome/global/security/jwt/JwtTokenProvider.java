@@ -2,6 +2,8 @@ package com.memeki.reviewhome.global.security.jwt;
 
 import com.memeki.reviewhome.global.security.config.ExpireTime;
 import com.memeki.reviewhome.global.security.dto.UserResponseDto;
+import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
+
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -52,11 +54,12 @@ public class JwtTokenProvider {
 
     // Authentication 을 가지고 AccessToken, RefreshToken 을 생성하는 메서드
     public UserResponseDto.TokenInfo generateToken(Authentication authentication) {
-        return generateToken(authentication.getName(), authentication.getAuthorities());
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return generateToken(principal.getId(), authentication.getName(), authentication.getAuthorities());
     }
 
     // name, authorities 를 가지고 AccessToken, RefreshToken 을 생성하는 메서드
-    public UserResponseDto.TokenInfo generateToken(String name,
+    public UserResponseDto.TokenInfo generateToken(Long id, String name,
             Collection<? extends GrantedAuthority> inputAuthorities) {
         // 권한 가져오기
         String authorities = inputAuthorities.stream()
@@ -67,9 +70,10 @@ public class JwtTokenProvider {
 
         // Generate AccessToken
         String accessToken = Jwts.builder()
-                .setSubject(name)
+                .setSubject(name) // 토큰 제목 설정
                 .claim(AUTHORITIES_KEY, authorities)
                 .claim("type", TYPE_ACCESS)
+                .claim("userId", id)
                 .setIssuedAt(now) // 토큰 발행 시간 정보
                 .setExpiration(new Date(now.getTime() + ExpireTime.ACCESS_TOKEN_EXPIRE_TIME)) // 토큰 만료 시간 설정
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -109,7 +113,10 @@ public class JwtTokenProvider {
                 .collect(Collectors.toList());
 
         // UserDetails 객체를 만들어서 Authentication 리턴
-        UserDetails principal = new User(claims.getSubject(), "", authorities);
+        UserPrincipal principal = new UserPrincipal(
+                Long.parseLong(claims.get("userId").toString()),
+                claims.getSubject(),
+                authorities);
         return new UsernamePasswordAuthenticationToken(principal, "", authorities);
     }
 
