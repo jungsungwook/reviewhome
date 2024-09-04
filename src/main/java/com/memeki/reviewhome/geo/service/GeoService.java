@@ -64,16 +64,31 @@ public class GeoService {
                     .retrieve()
                     .bodyToMono(VWorldApiResponseDto.class)
                     .block(); // 동기식 호출
-
-            if (vworldApiResponseDto != null) {
+            if (vworldApiResponseDto.getResponse().getResult() != null) {
                 // 응답에서 items를 추출합니다.
                 List<VWorldApiResponseDto.ItemDTO> items = vworldApiResponseDto.getResponse().getResult().getItems();
 
                 // items가 비어있지 않은 경우 동 이름을 검사합니다.
                 for (VWorldApiResponseDto.ItemDTO item : items) {
-                    String dongNum = Integer.toString(extractDongNumber(item.getAddress().getBldnmdc()));
-                    if (dongNm == null || dongNm.equals(dongNum)) {
-                        // 일치하는 동이 있는 경우 처리
+                    String dong_road = item.getAddress().getRoad() != null
+                            ? Integer.toString(extractDongNumber(item.getAddress().getRoad()))
+                            : "";
+                    String dong_bldnm = item.getAddress().getBldnm() != null
+                            ? Integer.toString(extractDongNumber(item.getAddress().getBldnm()))
+                            : "";
+                    String dong_bldnmdc = item.getAddress().getBldnmdc() != null
+                            ? Integer.toString(extractDongNumber(item.getAddress().getBldnmdc()))
+                            : "";
+
+                    if (dongNm != null && dongNm.equals(dong_bldnmdc)) {
+                        point = item.getPoint();
+                        found = true;
+                        break;
+                    } else if (dongNm != null && dongNm.equals(dong_bldnm)) {
+                        point = item.getPoint();
+                        found = true;
+                        break;
+                    } else if (dongNm != null && dongNm.equals(dong_road)) {
                         point = item.getPoint();
                         found = true;
                         break;

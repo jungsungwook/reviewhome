@@ -32,6 +32,7 @@ public class PostAddressController {
             SearchAddressDto.Response response = postAddressService.findAddress(addressInfo);
             return ResponseEntity.ok(response);
         } catch (DefaultException e) {
+            e.printStackTrace();
             throw e;
         }
     }
