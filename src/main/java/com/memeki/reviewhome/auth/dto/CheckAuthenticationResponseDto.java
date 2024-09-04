@@ -6,5 +6,6 @@ package com.memeki.reviewhome.auth.dto;
 public class CheckAuthenticationResponseDto {
     private long userId;
     private String userName;
+    private String nickname;
     private int status;
 }
