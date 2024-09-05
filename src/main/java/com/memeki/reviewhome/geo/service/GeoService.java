@@ -70,6 +70,13 @@ public class GeoService {
 
                 // items가 비어있지 않은 경우 동 이름을 검사합니다.
                 for (VWorldApiResponseDto.ItemDTO item : items) {
+                    if(dongNm == null){
+                        if (item.getAddress().getRoad() != null && item.getAddress().getRoad().contains(address)) {
+                            point = item.getPoint();
+                            found = true;
+                            break;
+                        }
+                    }
                     String dong_road = item.getAddress().getRoad() != null
                             ? Integer.toString(extractDongNumber(item.getAddress().getRoad()))
                             : "";
@@ -102,8 +109,6 @@ public class GeoService {
                         break;
                     }
                 }
-            } else {
-                throw new DefaultException(ErrorCode.INTERNAL_SERVER_ERROR);
             }
         }
         if (point != null) {

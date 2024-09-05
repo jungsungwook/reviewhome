@@ -3,7 +3,9 @@ package com.memeki.reviewhome.postAddress.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ import com.memeki.reviewhome.postAddress.repository.PostAddressRepository;
  * 2. DongNm에 대한 전처리가 부족함.
  *    동 이름에는 1, 2, 3같은 알 수 없는 숫자와 관리실, 상가 등과 같은 단어가 포함되어있음.
  *    현재는 100미만의 숫자는 제외하고 저장하도록 되어있음.
+ * 3. 중복되는 ItemDto 정보를 equals 와 hashcode 메서드로 통합시켜야함.
  */
 @Service
 public class PostAddressService {
@@ -61,7 +64,7 @@ public class PostAddressService {
      * @throws Exception
      */
     public SearchAddressDto.Response findAddress(
-            SearchAddressDto.Request addressInfo) throws Exception{
+            SearchAddressDto.Request addressInfo) throws Exception {
         PostAddress postAddress = postAddressRepository.findPostAddressBySigunguCdAndBjdongCdAndBunAndJi(
                 addressInfo.getSigunguCd(),
                 addressInfo.getBjdongCd(),
@@ -165,6 +168,7 @@ public class PostAddressService {
                 }
                 // 동 이름은 숫자부분만 추출하여 String으로 저장
                 for (int i = 0; i < items.size(); i++) {
+                    System.out.println(items.toString());
                     if (items.get(i).getDongNm().isBlank() || items.get(i).getDongNm().isEmpty()) {
                         continue;
                     }
@@ -184,6 +188,10 @@ public class PostAddressService {
                     pageNo.incrementAndGet(); // 다음 페이지로 이동
                 }
             }
+
+            Set<ItemDto> uniqueItems = new HashSet<>(allItems);
+            allItems = new ArrayList<>(uniqueItems);
+
             PostAddress postAddress = new PostAddress();
             postAddress.setSigunguCd(addressInfo.getSigunguCd());
             postAddress.setBjdongCd(addressInfo.getBjdongCd());
