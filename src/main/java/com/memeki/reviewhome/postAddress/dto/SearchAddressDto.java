@@ -61,11 +61,19 @@ public class SearchAddressDto {
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class Response {
+    public static class GetResponse {
         private int statusCode;
         private GetBrTitleInfoResponseDto.ItemDto item;
         private String point_x;
         private String point_y;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class PostResponse {
+        private int statusCode;
+        private String uuid;
         private List<String> dongNm;
     }
 }

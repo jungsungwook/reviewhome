@@ -80,7 +80,7 @@ public class PostAddressInfo {
     @PrePersist
     protected void onCreate() {
         if (uuid == null) {
-            uuid = UUID.randomUUID().toString();
+            uuid = UUID.randomUUID().toString().replaceAll("-", "");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -129,5 +129,10 @@ public class PostAddressInfo {
                 .bldNm(bldNm)
                 .dongNm(dongNm)
                 .build();
+    }
+
+    public PostAddressInfo orElseThrow(Object object) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'orElseThrow'");
     }
 }
