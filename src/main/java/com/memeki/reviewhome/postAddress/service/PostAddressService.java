@@ -22,6 +22,7 @@ import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
 import com.memeki.reviewhome.postAddress.dto.GetBrTitleInfoResponseDto;
 import com.memeki.reviewhome.postAddress.dto.GetBrTitleInfoResponseDto.ItemDto;
 import com.memeki.reviewhome.postAddress.dto.SearchAddressDto;
+import com.memeki.reviewhome.postAddress.dto.SearchAddressDto.GetResponse;
 import com.memeki.reviewhome.postAddress.entity.PostAddress;
 import com.memeki.reviewhome.postAddress.entity.PostAddressInfo;
 import com.memeki.reviewhome.postAddress.repository.PostAddressInfoRepository;
@@ -63,7 +64,7 @@ public class PostAddressService {
      * @param addressInfo
      * @throws Exception
      */
-    public SearchAddressDto.Response findAddress(
+    public SearchAddressDto.PostResponse findAddress(
             SearchAddressDto.Request addressInfo) throws Exception {
         PostAddress postAddress = postAddressRepository.findPostAddressBySigunguCdAndBjdongCdAndBunAndJi(
                 addressInfo.getSigunguCd(),
@@ -89,31 +90,23 @@ public class PostAddressService {
                         return Integer.compare(number1, number2);
                     }
                 });
-                SearchAddressDto.Response response = new SearchAddressDto.Response();
+                SearchAddressDto.PostResponse response = new SearchAddressDto.PostResponse();
                 response.setDongNm(dongNm);
                 response.setStatusCode(400);
                 return response;
             } else {
                 PostAddressInfo postAddressInfo = postAddressInfoRepository
                         .findPostAddressInfoByDongNm(addressInfo.getDongNm());
-                GeoLocation geoLocation = geoLocationRepository
-                        .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
-                SearchAddressDto.Response response = new SearchAddressDto.Response();
-                response.setItem(postAddressInfo.toItemDto());
-                response.setPoint_x(geoLocation.getPointX());
-                response.setPoint_y(geoLocation.getPointY());
+                SearchAddressDto.PostResponse response = new SearchAddressDto.PostResponse();
                 response.setStatusCode(200);
+                response.setUuid(postAddressInfo.getUuid());
                 return response;
             }
         }
-        SearchAddressDto.Response response = new SearchAddressDto.Response();
+        SearchAddressDto.PostResponse response = new SearchAddressDto.PostResponse();
         PostAddressInfo postAddressInfo = postAddressInfoRepository
                 .findPostAddressInfoByPostAddressId(postAddress.getId());
-        GeoLocation geoLocation = geoLocationRepository
-                .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
-        response.setItem(postAddressInfo.toItemDto());
-        response.setPoint_x(geoLocation.getPointX());
-        response.setPoint_y(geoLocation.getPointY());
+        response.setUuid(postAddressInfo.getUuid());
         response.setStatusCode(200);
         return response;
     }
@@ -125,9 +118,9 @@ public class PostAddressService {
      * @param addressInfo
      * @throws Exception
      */
-    public SearchAddressDto.Response searchAddress(SearchAddressDto.Request addressInfo) throws Exception {
+    public SearchAddressDto.PostResponse searchAddress(SearchAddressDto.Request addressInfo) throws Exception {
         try {
-            SearchAddressDto.Response response = new SearchAddressDto.Response();
+            SearchAddressDto.PostResponse response = new SearchAddressDto.PostResponse();
             AtomicInteger pageNo = new AtomicInteger(1); // 페이지 번호 초기화
             int numOfRows = 10; // 페이지 당 결과 수
             int totalCount = 0; // 총 결과 개수
@@ -307,10 +300,7 @@ public class PostAddressService {
                     throw new DefaultException(ErrorCode.NOT_FOUND);
                 }
                 response.setStatusCode(200);
-
-                response.setItem(saveItem);
-                response.setPoint_x(point.getPoint_x());
-                response.setPoint_y(point.getPoint_y());
+                response.setUuid(savePostAddressInfo.getUuid());
 
                 return response;
 
@@ -344,11 +334,7 @@ public class PostAddressService {
                 // 이제 선택한 동의 정보를 가져온다
                 PostAddressInfo postAddressInfo = postAddressInfoRepository
                         .findPostAddressInfoByDongNm(addressInfo.getDongNm());
-                GeoLocation geoLocation = geoLocationRepository
-                        .findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
-                response.setItem(postAddressInfo.toItemDto());
-                response.setPoint_x(geoLocation.getPointX());
-                response.setPoint_y(geoLocation.getPointY());
+                response.setUuid(postAddressInfo.getUuid());
                 response.setStatusCode(200);
                 return response;
             }
@@ -365,5 +351,29 @@ public class PostAddressService {
             return 0;
         }
         return Integer.parseInt(trimmed);
+    }
+
+    public GetResponse findAddressByPostAddressInfoId(String postAddressInfoId) throws Exception {
+        PostAddressInfo postAddressInfo = postAddressInfoRepository.findPostAddressInfoByUuid(postAddressInfoId);
+        if (postAddressInfo == null) {
+            throw new DefaultException(ErrorCode.NOT_FOUND);
+        }
+        PostAddress postAddress = postAddressRepository.findPostAddressById(postAddressInfo.getPostAddressId());
+        GeoLocation geoLocation = geoLocationRepository.findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
+        if (geoLocation == null) {
+            AddressToPointsResponseDto point = geoService.addressToPoints(postAddress.getNewPlatPlc(),
+                    postAddressInfo.getUuid(), postAddress.getId(), null);
+            if (point.getStatusCode() == 404) {
+                throw new DefaultException(ErrorCode.NOT_FOUND);
+            }
+            geoLocation = geoLocationRepository.findGeoLocationByPostAddressInfoUuid(postAddressInfo.getUuid());
+        }
+        GetResponse response = new GetResponse();
+        response.setStatusCode(200);
+        response.setItem(postAddressInfo.toItemDto());
+        response.setPoint_x(geoLocation.getPointX());
+        response.setPoint_y(geoLocation.getPointY());
+        return response;
+
     }
 }

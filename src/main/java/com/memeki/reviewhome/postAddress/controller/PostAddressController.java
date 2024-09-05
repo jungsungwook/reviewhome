@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.memeki.reviewhome.global.exception.DefaultException;
-import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
 import com.memeki.reviewhome.postAddress.dto.SearchAddressDto;
+import com.memeki.reviewhome.postAddress.dto.SearchAddressDto.GetResponse;
 import com.memeki.reviewhome.postAddress.service.PostAddressService;
 
 @RestController
@@ -26,10 +26,23 @@ public class PostAddressController {
     }
 
     @PostMapping(value = "/search")
-    public ResponseEntity<SearchAddressDto.Response> searchAddress(
+    public ResponseEntity<SearchAddressDto.PostResponse> searchAddress(
             @RequestBody SearchAddressDto.Request addressInfo) throws Exception {
         try {
-            SearchAddressDto.Response response = postAddressService.findAddress(addressInfo);
+            SearchAddressDto.PostResponse response = postAddressService.findAddress(addressInfo);
+            return ResponseEntity.ok(response);
+        } catch (DefaultException e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @GetMapping(value = "/search")
+    public ResponseEntity<GetResponse> searchAddressByPostAddressId(
+            @RequestParam String uuid) throws Exception {
+                System.out.println("uuid: " + uuid);
+        try {
+            GetResponse response = postAddressService.findAddressByPostAddressInfoId(uuid);
             return ResponseEntity.ok(response);
         } catch (DefaultException e) {
             e.printStackTrace();
