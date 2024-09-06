@@ -1,5 +1,7 @@
 package com.memeki.reviewhome.review.dto;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.memeki.reviewhome.review.entity.Review;
 
@@ -13,5 +15,5 @@ import lombok.Setter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ReviewResponseDto {
     private int statusCode;
-    private Review review;
+    private List<BuildingReview> buildingReviews;
 }
