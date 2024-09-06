@@ -17,4 +17,5 @@ import lombok.ToString;
 public class BuildingReview {
     Review review;
     BuildingReviewContent buildingReviewContent;
+    Boolean alreadyLiked;
 }
