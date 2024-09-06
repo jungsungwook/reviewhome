@@ -1,5 +1,6 @@
 package com.memeki.reviewhome.review.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.memeki.reviewhome.global.exception.DefaultException;
 import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
 import com.memeki.reviewhome.review.dto.BuildingReview;
+import com.memeki.reviewhome.review.dto.ReivewReplyDto;
 import com.memeki.reviewhome.review.dto.ReviewCreateDto;
 import com.memeki.reviewhome.review.entity.BuildingReviewContent;
 import com.memeki.reviewhome.review.entity.Review;
+import com.memeki.reviewhome.review.entity.ReviewLikeHistory;
 import com.memeki.reviewhome.review.repository.BuildingReviewContentRepository;
 import com.memeki.reviewhome.review.repository.ReviewLikeHistoryRepository;
 import com.memeki.reviewhome.review.repository.ReviewRepository;
@@ -67,6 +70,37 @@ public class ReviewService {
     }
 
     @Transactional
+    public int likeReview(int reviewId, long userId) throws Exception {
+        try {
+            ReviewLikeHistory reviewLikeHistory = reviewLikeHistoryRepository.findReviewLikeHistoryByUserIdAndReviewId(
+                    userId, reviewId);
+            if (reviewLikeHistory != null) {
+                if(reviewLikeHistory.getIsDeleted()){
+                    reviewLikeHistory.setIsDeleted(false);
+                    reviewLikeHistoryRepository.save(reviewLikeHistory);
+                    return 1;
+
+                } else {
+                    reviewLikeHistory.setIsDeleted(true);
+                    reviewLikeHistory.setDeletedAt(LocalDateTime.now());
+                    reviewLikeHistoryRepository.save(reviewLikeHistory);
+                    return 0;
+                }
+            }
+
+            reviewLikeHistory = new ReviewLikeHistory();
+            reviewLikeHistory.setReviewId(reviewId);
+            reviewLikeHistory.setUserId(userId);
+            reviewLikeHistory.setCreatedBy(userId);
+            reviewLikeHistoryRepository.save(reviewLikeHistory);
+            return 1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new DefaultException(ErrorCode.NOT_FOUND);
+        }
+    }
+
+    @Transactional
     public List<BuildingReview> getAllReviewByBuildingId(String uuid, Long userId) throws Exception {
         try {
             System.out.println("userId: " + userId);
@@ -92,6 +126,27 @@ public class ReviewService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new DefaultException(ErrorCode.NOT_FOUND);
+        }
+    }
+
+    @Transactional
+    public void createReviewReply(ReivewReplyDto.Request dto) throws Exception {
+        try {
+            Review review = new Review();
+            review.setTargetId(dto.getUuid());
+            review.setReplyId(dto.getReviewId());
+            review.setType("building");
+            review.setCreatedBy(dto.getUserId());
+            reviewRepository.save(review);
+
+            BuildingReviewContent buildingReviewContent = new BuildingReviewContent();
+            buildingReviewContent.setReviewId(review.getId());
+            buildingReviewContent.setContent(dto.getContent());
+            buildingReviewContent.setReviewType("reply");
+            buildingReviewContentRepository.save(buildingReviewContent);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception("Review not created");
         }
     }
 }
