@@ -14,7 +14,9 @@ import com.memeki.reviewhome.global.security.entity.User;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
 import com.memeki.reviewhome.global.security.service.UserService;
 import com.memeki.reviewhome.review.dto.BuildingReview;
+import com.memeki.reviewhome.review.dto.ReivewReplyDto;
 import com.memeki.reviewhome.review.dto.ReviewCreateDto;
+import com.memeki.reviewhome.review.dto.ReviewLikeDto;
 import com.memeki.reviewhome.review.dto.ReviewResponseDto;
 import com.memeki.reviewhome.review.entity.Review;
 import com.memeki.reviewhome.review.service.ReviewService;
@@ -41,6 +43,30 @@ public class ReviewController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("like")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ReviewLikeDto.Response> likeReview(
+            @RequestBody ReviewLikeDto.Request body,
+            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        int status = reviewService.likeReview(body.getReviewId(), userDetails.getId());
+        ReviewLikeDto.Response response = new ReviewLikeDto.Response();
+        response.setStatusCode(200);
+        response.setType(status);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reply")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ReivewReplyDto.Response> createReviewReply(
+            @RequestBody ReivewReplyDto.Request body,
+            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        body.setUserId(userDetails.getId());
+        reviewService.createReviewReply(body);
+        ReivewReplyDto.Response response = new ReivewReplyDto.Response();
+        response.setStatusCode(200);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/building")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReviewResponseDto> createReview(
@@ -56,7 +82,8 @@ public class ReviewController {
     public ResponseEntity<ReviewResponseDto> getReviewByBuildingId(
             @RequestParam String uuid,
             @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
-        List<BuildingReview> result = reviewService.getAllReviewByBuildingId(uuid, userDetails != null ? userDetails.getId() : null);
+        List<BuildingReview> result = reviewService.getAllReviewByBuildingId(uuid,
+                userDetails != null ? userDetails.getId() : null);
         ReviewResponseDto response = new ReviewResponseDto();
         response.setBuildingReviews(result);
         response.setStatusCode(200);

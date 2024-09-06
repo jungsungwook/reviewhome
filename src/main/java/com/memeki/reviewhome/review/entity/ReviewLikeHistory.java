@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import javax.persistence.*;
 
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +14,8 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Entity
+@SQLDelete(sql = "UPDATE review_like_history SET is_deleted = true WHERE id = ?")
+@Where(clause = "is_deleted = false")
 @Table(name = "review_like_history")
 @Getter
 @Setter
@@ -55,5 +59,11 @@ public class ReviewLikeHistory {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreRemove
+    protected void onDelete() {
+        this.deletedAt = LocalDateTime.now();
+        this.isDeleted = true;
     }
 }
