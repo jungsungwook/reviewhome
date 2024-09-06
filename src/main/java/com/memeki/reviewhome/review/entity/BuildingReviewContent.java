@@ -12,31 +12,31 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Entity
-@Table(name = "review")
+@Table(name = "building_review_content")
 @Getter
 @Setter
 @ToString()
 @NoArgsConstructor
-public class Review {
+public class BuildingReviewContent {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "review_id")
+    private int reviewId;
 
-    /*
-     * 호환성을 위해 target_id를 String으로 선언하였으니 형변환에 유의바람.
-     */
-    @Column(name = "target_id")
-    private String targetId;
+    @Column(name = "review_type")
+    private String reviewType;
 
-    @Column(name = "reply_id", nullable = true)
-    private Integer replyId;
+    @Column(name = "title")
+    private String title;
 
-    @Column(name = "created_by")
-    private long createdBy;
+    @Column(name = "content")
+    private String content;
+
+    @Column(name = "rating", nullable = true)
+    private Integer rating;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
