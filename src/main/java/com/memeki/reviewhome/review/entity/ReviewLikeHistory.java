@@ -12,28 +12,22 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Entity
-@Table(name = "review")
+@Table(name = "review_like_history")
 @Getter
 @Setter
 @ToString()
 @NoArgsConstructor
-public class Review {
+public class ReviewLikeHistory {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "review_id")
+    private int reviewId;
 
-    /*
-     * 호환성을 위해 target_id를 String으로 선언하였으니 형변환에 유의바람.
-     */
-    @Column(name = "target_id")
-    private String targetId;
-
-    @Column(name = "reply_id", nullable = true)
-    private Integer replyId;
+    @Column(name = "user_id")
+    private long userId;
 
     @Column(name = "created_by")
     private long createdBy;
@@ -62,7 +56,4 @@ public class Review {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    @Transient
-    private int likeCount;
 }

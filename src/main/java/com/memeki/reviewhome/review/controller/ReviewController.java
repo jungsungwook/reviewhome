@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class ReviewController {
     @Autowired
     private ReviewService reviewService;
-    
+
     @Autowired
     private UserService userService;
 
@@ -53,8 +53,10 @@ public class ReviewController {
     }
 
     @GetMapping("/building")
-    public ResponseEntity<ReviewResponseDto> getReviewByBuildingId(@RequestParam String uuid) throws Exception {
-        List<BuildingReview> result = reviewService.getAllReviewByBuildingId(uuid);
+    public ResponseEntity<ReviewResponseDto> getReviewByBuildingId(
+            @RequestParam String uuid,
+            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        List<BuildingReview> result = reviewService.getAllReviewByBuildingId(uuid, userDetails != null ? userDetails.getId() : null);
         ReviewResponseDto response = new ReviewResponseDto();
         response.setBuildingReviews(result);
         response.setStatusCode(200);

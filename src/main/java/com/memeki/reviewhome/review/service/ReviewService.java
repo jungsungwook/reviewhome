@@ -15,6 +15,7 @@ import com.memeki.reviewhome.review.dto.ReviewCreateDto;
 import com.memeki.reviewhome.review.entity.BuildingReviewContent;
 import com.memeki.reviewhome.review.entity.Review;
 import com.memeki.reviewhome.review.repository.BuildingReviewContentRepository;
+import com.memeki.reviewhome.review.repository.ReviewLikeHistoryRepository;
 import com.memeki.reviewhome.review.repository.ReviewRepository;
 
 @Service
@@ -25,6 +26,9 @@ public class ReviewService {
 
     @Autowired
     private BuildingReviewContentRepository buildingReviewContentRepository;
+
+    @Autowired
+    private ReviewLikeHistoryRepository reviewLikeHistoryRepository;
 
     public ReviewService(ReviewRepository reviewRepository) {
         this.reviewRepository = reviewRepository;
@@ -63,15 +67,25 @@ public class ReviewService {
     }
 
     @Transactional
-    public List<BuildingReview> getAllReviewByBuildingId(String uuid) throws Exception {
+    public List<BuildingReview> getAllReviewByBuildingId(String uuid, Long userId) throws Exception {
         try {
+            System.out.println("userId: " + userId);
             List<Review> reviews = reviewRepository.findAllByTypeAndTargetId("building", uuid);
             List<BuildingReview> buildingReviews = new ArrayList<>(reviews.stream().map(review -> {
                 BuildingReview buildingReview = new BuildingReview();
+                review.setLikeCount(
+                        reviewLikeHistoryRepository.countReviewLikeHistoryByReviewId(review.getId()));
                 buildingReview.setReview(review);
                 BuildingReviewContent buildingReviewContent = buildingReviewContentRepository
                         .findBuildingReviewContentByReviewId(review.getId());
                 buildingReview.setBuildingReviewContent(buildingReviewContent);
+                if (userId == null) {
+                    buildingReview.setAlreadyLiked(false);
+                } else {
+                    Boolean alreadyLiked = reviewLikeHistoryRepository.findReviewLikeHistoryByUserIdAndReviewId(userId,
+                            review.getId()) != null;
+                    buildingReview.setAlreadyLiked(alreadyLiked);
+                }
                 return buildingReview;
             }).collect(Collectors.toList()));
             return buildingReviews;
