@@ -161,7 +161,6 @@ public class PostAddressService {
                 }
                 // 동 이름은 숫자부분만 추출하여 String으로 저장
                 for (int i = 0; i < items.size(); i++) {
-                    System.out.println(items.toString());
                     if (items.get(i).getDongNm().isBlank() || items.get(i).getDongNm().isEmpty()) {
                         continue;
                     }
