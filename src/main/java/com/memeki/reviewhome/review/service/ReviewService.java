@@ -49,7 +49,7 @@ public class ReviewService {
     public String createReview(ReviewCreateDto dto) throws Exception {
         try {
             Review review = new Review();
-            review.setTargetId(dto.getTargeId());
+            review.setTargetId(dto.getTargetId());
             review.setType("building");
             review.setCreatedBy(dto.getUserId());
             reviewRepository.save(review);
@@ -103,7 +103,6 @@ public class ReviewService {
     @Transactional
     public List<BuildingReview> getAllReviewByBuildingId(String uuid, Long userId) throws Exception {
         try {
-            System.out.println("userId: " + userId);
             List<Review> reviews = reviewRepository.findAllByTypeAndTargetId("building", uuid);
             List<BuildingReview> buildingReviews = new ArrayList<>(reviews.stream().map(review -> {
                 BuildingReview buildingReview = new BuildingReview();
