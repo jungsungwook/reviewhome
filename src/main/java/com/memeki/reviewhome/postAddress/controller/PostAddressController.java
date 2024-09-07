@@ -40,7 +40,6 @@ public class PostAddressController {
     @GetMapping(value = "/search")
     public ResponseEntity<GetResponse> searchAddressByPostAddressId(
             @RequestParam String uuid) throws Exception {
-                System.out.println("uuid: " + uuid);
         try {
             GetResponse response = postAddressService.findAddressByPostAddressInfoId(uuid);
             return ResponseEntity.ok(response);
