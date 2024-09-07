@@ -50,11 +50,8 @@ public class User extends BaseDateEntity {
     @PrePersist
     protected void onCreate() {
         if (nickname == null) {
-            LocalDateTime now = LocalDateTime.now();
-            String date = now.toString().substring(2, 4) + now.toString().substring(5, 7)
-                    + now.toString().substring(8, 10);
             String uuid = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 6);
-            nickname = "user_" + date + "_" + uuid;
+            nickname = "user_" + uuid;
         }
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
