@@ -96,7 +96,9 @@ public class PostAddressService {
                 return response;
             } else {
                 PostAddressInfo postAddressInfo = postAddressInfoRepository
-                        .findPostAddressInfoByDongNm(addressInfo.getDongNm());
+                        .findPostAddressInfoByDongNmAndPostAddressId(
+                                addressInfo.getDongNm(),
+                                postAddress.getId());
                 SearchAddressDto.PostResponse response = new SearchAddressDto.PostResponse();
                 response.setStatusCode(200);
                 response.setUuid(postAddressInfo.getUuid());
@@ -332,7 +334,9 @@ public class PostAddressService {
 
                 // 이제 선택한 동의 정보를 가져온다
                 PostAddressInfo postAddressInfo = postAddressInfoRepository
-                        .findPostAddressInfoByDongNm(addressInfo.getDongNm());
+                        .findPostAddressInfoByDongNmAndPostAddressId(
+                                addressInfo.getDongNm(),
+                                savePostAddress.getId());
                 response.setUuid(postAddressInfo.getUuid());
                 response.setStatusCode(200);
                 return response;
