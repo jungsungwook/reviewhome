@@ -122,6 +122,14 @@ public class CommunityService {
                 body.getUserId(), body.getCommunityUuid())) {
             throw new DefaultException(ErrorCode.ALREADY_ENTERED);
         }
+        // 닉네임은 2자~8자
+        if (body.getNickname().length() < 2 || body.getNickname().length() > 8) {
+            throw new DefaultException(ErrorCode.INVALID_PARAMETER);
+        }
+        // 특수문자가 있을 경우 제외
+        if (!body.getNickname().matches("^[a-zA-Z0-9가-힣]*$")) {
+            throw new DefaultException(ErrorCode.INVALID_PARAMETER);
+        }
         
         if (community.getIsPassword()) {
             if (body.getPassword() == null) {
