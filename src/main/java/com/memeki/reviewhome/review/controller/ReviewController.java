@@ -42,7 +42,7 @@ public class ReviewController {
         response.setStatusCode(200);
         return ResponseEntity.ok(response);
     }
-
+//
     @PostMapping("like")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReviewLikeDto.Response> likeReview(
