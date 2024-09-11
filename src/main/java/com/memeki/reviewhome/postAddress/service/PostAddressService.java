@@ -14,8 +14,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.memeki.reviewhome.geo.dto.AddressToPointsResponseDto;
+import com.memeki.reviewhome.geo.dto.GeoFeaturesByPostAddressInfoDto;
+import com.memeki.reviewhome.geo.entity.GeoFeatures;
 import com.memeki.reviewhome.geo.entity.GeoLocation;
+import com.memeki.reviewhome.geo.repository.GeoFeaturesRepository;
 import com.memeki.reviewhome.geo.repository.GeoLocationRepository;
+import com.memeki.reviewhome.geo.service.GeoFeaturesService;
 import com.memeki.reviewhome.geo.service.GeoService;
 import com.memeki.reviewhome.global.exception.DefaultException;
 import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
@@ -43,6 +47,9 @@ public class PostAddressService {
 
     @Autowired
     private GeoService geoService;
+
+    @Autowired
+    private GeoFeaturesService geoFeaturesService;
 
     private final PostAddressRepository postAddressRepository;
     private final PostAddressInfoRepository postAddressInfoRepository;
@@ -275,7 +282,8 @@ public class PostAddressService {
             }
             response.setDongNm(null);
             PostAddress savePostAddress = postAddressRepository.save(postAddress);
-
+            GeoFeaturesByPostAddressInfoDto geoFeatures = geoFeaturesService.getFeatureByPostAddress(savePostAddress);
+            System.out.println(geoFeatures.getId());
             /*
              * 여러개 동이 아닌 경우 해당 주소를 저장하고 좌표를 반환한다.
              */
@@ -284,11 +292,19 @@ public class PostAddressService {
 
                 PostAddressInfo postAddressInfo = new PostAddressInfo();
                 postAddressInfo.setPostAddressId(savePostAddress.getId());
+                postAddressInfo.setGeoFeaturesId(geoFeatures.getId());
+                postAddressInfo.setGeoFeaturesName(geoFeatures.getEmdKorNm());
                 // 동 이름이 있는 경우
                 if (saveItem.getDongNm() != null &&
                         !saveItem.getDongNm().isBlank() &&
                         !saveItem.getDongNm().isEmpty()) {
                     saveItem.setDongNm(Integer.toString(extractDongNumber(saveItem.getDongNm())));
+                }
+                if(saveItem.getBldNm() != null && !saveItem.getBldNm().isBlank() && !saveItem.getBldNm().isEmpty()) {
+                    saveItem.setBldNm(saveItem.getBldNm().trim());
+                }
+                if(saveItem.getBldNm() == null || saveItem.getBldNm().isBlank() || saveItem.getBldNm().isEmpty()) {
+                    saveItem.setBldNm(newPlatPlc);
                 }
                 postAddressInfo.copyFromItemDto(saveItem);
                 PostAddressInfo savePostAddressInfo = postAddressInfoRepository.save(postAddressInfo);
@@ -310,6 +326,8 @@ public class PostAddressService {
                     // 우선 모든 동의 정보를 저장한다.
                     PostAddressInfo postAddressInfo = new PostAddressInfo();
                     postAddressInfo.setPostAddressId(savePostAddress.getId());
+                    postAddressInfo.setGeoFeaturesId(geoFeatures.getId());
+                    postAddressInfo.setGeoFeaturesName(geoFeatures.getEmdKorNm());
                     if (allItems.get(i).getDongNm().isBlank() || allItems.get(i).getDongNm().isEmpty()) {
                         continue;
                     }
@@ -318,6 +336,12 @@ public class PostAddressService {
                         continue;
                     }
                     allItems.get(i).setDongNm(Integer.toString(dongNum));
+                    if(allItems.get(i).getBldNm() != null && !allItems.get(i).getBldNm().isBlank() && !allItems.get(i).getBldNm().isEmpty()) {
+                        allItems.get(i).setBldNm(allItems.get(i).getBldNm().trim());
+                    }
+                    if(allItems.get(i).getBldNm() == null || allItems.get(i).getBldNm().isBlank() || allItems.get(i).getBldNm().isEmpty()) {
+                        allItems.get(i).setBldNm(newPlatPlc);
+                    }
                     postAddressInfo.copyFromItemDto(allItems.get(i));
                     PostAddressInfo savePostAddressInfo = postAddressInfoRepository.save(postAddressInfo);
 
