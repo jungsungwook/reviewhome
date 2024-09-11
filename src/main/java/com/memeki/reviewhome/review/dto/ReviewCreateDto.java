@@ -12,4 +12,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ReviewCreateDto {
+    private String type;
+    private String targetId;
+    private String createdBy;
+    private String content;
 }
