@@ -15,12 +15,16 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.memeki.reviewhome.geo.dto.GeoFeaturesByPostAddressInfoDto;
 import com.memeki.reviewhome.geo.dto.GeoJson;
 import com.memeki.reviewhome.geo.entity.GeoFeatures;
 import com.memeki.reviewhome.geo.repository.GeoFeaturesRepository;
 import com.memeki.reviewhome.geo.repository.GeoFeaturesRepositoryCustom;
 import com.memeki.reviewhome.historyManager.entity.UpdateHistory;
 import com.memeki.reviewhome.historyManager.repository.UpdateHistoryRepository;
+import com.memeki.reviewhome.postAddress.entity.PostAddress;
+import com.memeki.reviewhome.postAddress.entity.PostAddressInfo;
+import com.memeki.reviewhome.postAddress.repository.PostAddressRepository;
 
 import java.util.ArrayList;
 
@@ -34,6 +38,9 @@ public class GeoFeaturesService {
 
     @Autowired
     private GeoFeaturesRepositoryCustom geoFeaturesRepositoryCustom;
+
+    @Autowired
+    private PostAddressRepository postAddressRepository;
 
     @Autowired
     private GeoJsonConverter geoJsonConverter;
@@ -158,5 +165,18 @@ public class GeoFeaturesService {
         return find.stream()
                 .map(GeoJsonConverter::convertToGeoJSON)
                 .collect(Collectors.toList());
+    }
+
+    public GeoFeaturesByPostAddressInfoDto getFeatureByPostAddressInfo(PostAddressInfo postAddressInfo) {
+        PostAddress postAddress = postAddressRepository.findPostAddressById(postAddressInfo.getPostAddressId());
+        return getFeatureByPostAddress(postAddress);
+    }
+
+    public GeoFeaturesByPostAddressInfoDto getFeatureByPostAddress(PostAddress postAddress) {
+        String sigunguCd = postAddress.getSigunguCd();
+        String bjdongCd = postAddress.getBjdongCd();
+        String emdCd = sigunguCd + bjdongCd;
+        emdCd = emdCd.substring(0, emdCd.length() - 2);
+        return geoFeaturesRepositoryCustom.findByEmdCd(emdCd);
     }
 }

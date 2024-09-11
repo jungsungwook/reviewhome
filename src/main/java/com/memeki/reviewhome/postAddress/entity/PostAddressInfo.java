@@ -71,6 +71,12 @@ public class PostAddressInfo {
     @Column(name = "dongNm")
     private String dongNm;
 
+    @Column(name = "geo_features_id")
+    private int geoFeaturesId;
+
+    @Column(name = "geo_features_name")
+    private String geoFeaturesName;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

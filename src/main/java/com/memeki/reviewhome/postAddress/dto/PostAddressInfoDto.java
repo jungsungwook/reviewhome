@@ -33,6 +33,8 @@ public class PostAddressInfoDto {
     private int rideUseElvtCnt;
     private String bldNm;
     private String dongNm;
+    private String geoFeaturesId;
+    private String geoFeaturesName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -55,6 +57,8 @@ public class PostAddressInfoDto {
             @JsonProperty("rideUseElvtCnt") int rideUseElvtCnt,
             @JsonProperty("bldNm") String bldNm,
             @JsonProperty("dongNm") String dongNm,
+            @JsonProperty("geoFeaturesId") String geoFeaturesId,
+            @JsonProperty("geoFeaturesName") String geoFeaturesName,
             @JsonProperty("createdAt") LocalDateTime createdAt,
             @JsonProperty("updatedAt") LocalDateTime updatedAt
             ) {
@@ -75,6 +79,8 @@ public class PostAddressInfoDto {
         this.rideUseElvtCnt = rideUseElvtCnt;
         this.bldNm = bldNm;
         this.dongNm = dongNm;
+        this.geoFeaturesId = geoFeaturesId;
+        this.geoFeaturesName = geoFeaturesName;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
