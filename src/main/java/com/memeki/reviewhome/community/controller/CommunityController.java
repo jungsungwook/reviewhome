@@ -6,7 +6,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.memeki.reviewhome.community.dto.CommunityDefaultResponse;
 import com.memeki.reviewhome.community.dto.CommunityEnterRequest;
 import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
+import com.memeki.reviewhome.community.dto.CommunityPostDetailResponse;
+import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
 import com.memeki.reviewhome.community.dto.CommunityResponse;
+import com.memeki.reviewhome.community.dto.CreatePostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.service.CommunityService;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
@@ -51,6 +54,43 @@ public class CommunityController {
                 }
                 return ResponseEntity.ok(response);
 
+        }
+
+        @GetMapping("/building/post/detail")
+        public ResponseEntity<CommunityPostDetailResponse> getCommunitiyPostDetailById(
+                        @RequestParam Long id) {
+                CommunityPostDetailResponse response = new CommunityPostDetailResponse();
+                response.setCommunityPost(communityService.getCommunityPostById(id));
+                return ResponseEntity.ok(response);
+        }
+
+        @GetMapping("/building/posts")
+        public ResponseEntity<CommunityPostsResponse> getCommunityPostsByCommunityUuid(
+                        @RequestParam String uuid,
+                        @RequestParam(required = false) Integer page,
+                        @RequestParam(required = false) Integer size,
+                        @RequestParam(required = false) String search) {
+                try {
+                        Pageable pageable = PageRequest.of(page, size);
+                        CommunityPostsResponse response = communityService.getCommunityPosts(uuid, pageable, search);
+                        response.setStatusCode(200);
+                        return ResponseEntity.ok(response);
+                } catch (Exception e) {
+                        e.printStackTrace();
+                        CommunityPostsResponse response = new CommunityPostsResponse();
+                        response.setStatusCode(207);
+                        return ResponseEntity.ok(response);
+                }
+        }
+
+        @PostMapping("/building/post")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<Void> createCommunityPost(
+                        @RequestBody CreatePostRequest body,
+                        @AuthenticationPrincipal UserPrincipal userDetails) {
+                body.setCreatedBy(userDetails.getId());
+                communityService.createCommunityPost(body);
+                return ResponseEntity.ok().build();
         }
 
         @GetMapping("/building/find")

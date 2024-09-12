@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 
 import com.memeki.reviewhome.community.dto.CommunityEnterRequest;
 import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
+import com.memeki.reviewhome.community.dto.CommunityPostPagination;
+import com.memeki.reviewhome.community.dto.CommunityPostSimple;
+import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
+import com.memeki.reviewhome.community.dto.CreatePostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.entity.CommunityEnterHistory;
 import com.memeki.reviewhome.community.entity.CommunityPost;
@@ -122,7 +126,15 @@ public class CommunityService {
                 body.getUserId(), body.getCommunityUuid())) {
             throw new DefaultException(ErrorCode.ALREADY_ENTERED);
         }
-        
+        // 닉네임은 2자~8자
+        if (body.getNickname().length() < 2 || body.getNickname().length() > 8) {
+            throw new DefaultException(ErrorCode.INVALID_PARAMETER);
+        }
+        // 특수문자가 있을 경우 제외
+        if (!body.getNickname().matches("^[a-zA-Z0-9가-힣]*$")) {
+            throw new DefaultException(ErrorCode.INVALID_PARAMETER);
+        }
+
         if (community.getIsPassword()) {
             if (body.getPassword() == null) {
                 throw new DefaultException(ErrorCode.NEED_PASSWORD);
@@ -161,10 +173,9 @@ public class CommunityService {
                 throw new DefaultException(ErrorCode.NEED_ENTER);
             }
         }
-        List<CommunityPost> posts = communityPostRepository.findAllByCommunityUuid(communityUuid, pageable)
+        List<CommunityPost> posts = communityPostRepository.findAllByCommunityUuidOrderByCreatedAtDesc(communityUuid, pageable)
                 .getContent();
         for (CommunityPost post : posts) {
-            System.out.println(post.toString());
             long likeCount = postLikeHistoryRepository.countByPostId(post.getId());
             post.setLikeCount((int) likeCount);
         }
@@ -202,5 +213,63 @@ public class CommunityService {
         CommunityEnterHistory communityEnterHistory = communityEnterHistoryRepository
                 .findCommunityEnterHistoryByUserIdAndCommunityUuid(userId, communityUuid);
         return communityEnterHistory != null;
+    }
+
+    public CommunityPostsResponse getCommunityPosts(String uuid, Pageable pageable, String search) {
+        Page<CommunityPost> postsPage;
+        if (search == null) {
+            postsPage = communityPostRepository.findAllByCommunityUuidOrderByCreatedAtDesc(uuid, pageable);
+        } else {
+            postsPage = communityPostRepository.findAllByCommunityUuidAndTitleContainingOrderByCreatedAtDesc(uuid, search, pageable);
+        }
+
+        CommunityPostsResponse response = new CommunityPostsResponse();
+        response.setPosts(convertToCommunityPostSimple(postsPage.getContent()));
+        response.setPagination(createPagination(postsPage));
+        return response;
+    }
+
+    private CommunityPostSimple[] convertToCommunityPostSimple(List<CommunityPost> posts) {
+        return posts.stream()
+                .map(post -> {
+                    CommunityPostSimple simplePost = new CommunityPostSimple();
+                    simplePost.setId(post.getId());
+                    simplePost.setPostType(post.getPostType());
+                    simplePost.setCommunityUuid(post.getCommunityUuid());
+                    simplePost.setTitle(post.getTitle());
+                    simplePost.setContent(post.getContent());
+                    simplePost.setCreatedAt(post.getCreatedAt());
+                    simplePost.setCreatedBy(post.getCreatedBy());
+                    simplePost.setLikeCount(post.getLikeCount());
+                    simplePost.setViewCount(post.getViewCount());
+                    return simplePost;
+                })
+                .toArray(CommunityPostSimple[]::new);
+    }
+
+    private CommunityPostPagination createPagination(Page<CommunityPost> postsPage) {
+        CommunityPostPagination pagination = new CommunityPostPagination();
+        pagination.setTotalElements(postsPage.getTotalElements());
+        pagination.setTotalPages(postsPage.getTotalPages());
+        pagination.setPage(postsPage.getNumber());
+        pagination.setSize(postsPage.getSize());
+        pagination.setLast(postsPage.isLast());
+        return pagination;
+    }
+
+    public CommunityPost getCommunityPostById(Long id) {
+        return communityPostRepository.findById(id)
+                .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
+    }
+
+    public CreatePostRequest createCommunityPost(CreatePostRequest request) {
+        CommunityPost post = new CommunityPost();
+        post.setCommunityUuid(request.getCommunityUuid());
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setPostType(request.getPostType());
+        post.setCreatedBy(request.getCreatedBy());
+        communityPostRepository.save(post);
+        return request;
     }
 }
