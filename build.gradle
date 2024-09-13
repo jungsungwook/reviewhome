@@ -3,6 +3,7 @@ plugins {
 	id 'war'
 	id 'org.springframework.boot' version '2.6.4'
 	id 'io.spring.dependency-management' version '1.1.4'
+	id 'com.google.osdetector' version '1.7.0'
 }
 
 group = 'com.memeki'
@@ -62,6 +63,9 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-core'
 	implementation 'org.springframework.session:spring-session-jdbc'
 	implementation 'com.oracle.oci.sdk:oci-java-sdk-objectstorage:2.47.0'
+	if (osdetector.arch.equals("aarch_64")) {
+		implementation("io.netty:netty-resolver-dns-native-macos:4.1.79.Final:osx-aarch_64")
+	}
 }
 
 tasks.named('test') {
