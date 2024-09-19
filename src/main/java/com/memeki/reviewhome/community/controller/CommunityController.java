@@ -9,6 +9,7 @@ import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
 import com.memeki.reviewhome.community.dto.CommunityPostDetailResponse;
 import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
 import com.memeki.reviewhome.community.dto.CommunityResponse;
+import com.memeki.reviewhome.community.dto.CreatePostReplyRequest;
 import com.memeki.reviewhome.community.dto.CreatePostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.service.CommunityService;
@@ -17,6 +18,7 @@ import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -91,6 +93,16 @@ public class CommunityController {
                 body.setCreatedBy(userDetails.getId());
                 communityService.createCommunityPost(body);
                 return ResponseEntity.ok().build();
+        }
+
+        @PostMapping("/building/post/comment")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<Void> createCommunityPostComment(
+                        @RequestBody CreatePostReplyRequest body,
+                        @AuthenticationPrincipal UserPrincipal userDetails) {
+                body.setCreatedBy(userDetails.getId());
+                communityService.createCommunityPostComment(body);
+                return ResponseEntity.status(HttpStatus.CREATED).build();
         }
 
         @GetMapping("/building/find")

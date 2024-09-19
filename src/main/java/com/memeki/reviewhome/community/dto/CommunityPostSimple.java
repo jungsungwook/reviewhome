@@ -24,4 +24,5 @@ public class CommunityPostSimple {
     private long createdBy;
     private int likeCount;
     private int viewCount;
+    private int replyCount;
 }

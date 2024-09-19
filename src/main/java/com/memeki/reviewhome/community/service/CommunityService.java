@@ -15,12 +15,15 @@ import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
 import com.memeki.reviewhome.community.dto.CommunityPostPagination;
 import com.memeki.reviewhome.community.dto.CommunityPostSimple;
 import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
+import com.memeki.reviewhome.community.dto.CreatePostReplyRequest;
 import com.memeki.reviewhome.community.dto.CreatePostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.entity.CommunityEnterHistory;
 import com.memeki.reviewhome.community.entity.CommunityPost;
+import com.memeki.reviewhome.community.entity.CommunityPostReply;
 import com.memeki.reviewhome.community.repository.CommunityEnterHistoryRepository;
 import com.memeki.reviewhome.community.repository.CommunityPostLikeHistoryRepository;
+import com.memeki.reviewhome.community.repository.CommunityPostReplyRepository;
 import com.memeki.reviewhome.community.repository.CommunityPostRepository;
 import com.memeki.reviewhome.community.repository.CommunityRepository;
 import com.memeki.reviewhome.global.exception.DefaultException;
@@ -45,6 +48,9 @@ public class CommunityService {
 
     @Autowired
     private CommunityRepository communityRepository;
+
+    @Autowired
+    private CommunityPostReplyRepository postReplyRepository;
 
     @Autowired
     private CommunityPostLikeHistoryRepository postLikeHistoryRepository;
@@ -173,11 +179,14 @@ public class CommunityService {
                 throw new DefaultException(ErrorCode.NEED_ENTER);
             }
         }
-        List<CommunityPost> posts = communityPostRepository.findAllByCommunityUuidOrderByCreatedAtDesc(communityUuid, pageable)
+        List<CommunityPost> posts = communityPostRepository
+                .findAllByCommunityUuidOrderByCreatedAtDesc(communityUuid, pageable)
                 .getContent();
         for (CommunityPost post : posts) {
             long likeCount = postLikeHistoryRepository.countByPostId(post.getId());
             post.setLikeCount((int) likeCount);
+            long replyCount = postReplyRepository.countCommunityPostReplyByPostId(post.getId());
+            post.setReplyCount((int) replyCount);
         }
         return posts;
     }
@@ -200,6 +209,8 @@ public class CommunityService {
             if (likeCount >= 10) {
                 post.setLikeCount((int) likeCount);
                 popularPosts.add(post);
+                long replyCount = postReplyRepository.countCommunityPostReplyByPostId(post.getId());
+                post.setReplyCount((int) replyCount);
             }
         }
 
@@ -220,7 +231,15 @@ public class CommunityService {
         if (search == null) {
             postsPage = communityPostRepository.findAllByCommunityUuidOrderByCreatedAtDesc(uuid, pageable);
         } else {
-            postsPage = communityPostRepository.findAllByCommunityUuidAndTitleContainingOrderByCreatedAtDesc(uuid, search, pageable);
+            postsPage = communityPostRepository.findAllByCommunityUuidAndTitleContainingOrderByCreatedAtDesc(uuid,
+                    search, pageable);
+        }
+
+        for (CommunityPost post : postsPage.getContent()) {
+            long likeCount = postLikeHistoryRepository.countByPostId(post.getId());
+            post.setLikeCount((int) likeCount);
+            long replyCount = postReplyRepository.countCommunityPostReplyByPostId(post.getId());
+            post.setReplyCount((int) replyCount);
         }
 
         CommunityPostsResponse response = new CommunityPostsResponse();
@@ -242,6 +261,7 @@ public class CommunityService {
                     simplePost.setCreatedBy(post.getCreatedBy());
                     simplePost.setLikeCount(post.getLikeCount());
                     simplePost.setViewCount(post.getViewCount());
+                    simplePost.setReplyCount(post.getReplyCount());
                     return simplePost;
                 })
                 .toArray(CommunityPostSimple[]::new);
@@ -258,8 +278,13 @@ public class CommunityService {
     }
 
     public CommunityPost getCommunityPostById(Long id) {
-        return communityPostRepository.findById(id)
+        CommunityPost post = communityPostRepository.findById(id)
                 .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
+        List<CommunityPostReply> replies = postReplyRepository.findAllByPostId(id);
+        post.setReplies(replies);
+        post.setReplyCount(replies.size());
+        communityPostRepository.save(post);
+        return post;
     }
 
     public CreatePostRequest createCommunityPost(CreatePostRequest request) {
@@ -271,5 +296,17 @@ public class CommunityService {
         post.setCreatedBy(request.getCreatedBy());
         communityPostRepository.save(post);
         return request;
+    }
+
+    public void createCommunityPostComment(CreatePostReplyRequest body){
+        CommunityPostReply reply = new CommunityPostReply();
+        reply.setPostId(body.getPostId());
+        reply.setContent(body.getContent());
+        reply.setCreatedBy(body.getCreatedBy());
+        if(body.getIsReply() != null && body.getIsReply()){
+            reply.setIsReply(true);
+            reply.setReplyId(body.getReplyId());
+        }
+        postReplyRepository.save(reply);
     }
 }

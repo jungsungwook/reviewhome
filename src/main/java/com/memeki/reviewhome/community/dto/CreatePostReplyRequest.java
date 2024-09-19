@@ -1,10 +1,6 @@
 package com.memeki.reviewhome.community.dto;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.memeki.reviewhome.community.entity.CommunityPost;
-import com.memeki.reviewhome.community.entity.CommunityPostReply;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +12,10 @@ import lombok.ToString;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
-public class CommunityPostDetailResponse {
-    private int statusCode;
-    private CommunityPost communityPost;
+public class CreatePostReplyRequest {
+    private String content;
+    private Boolean isReply;
+    private Long replyId;
+    private Long postId;
+    private Long createdBy;
 }

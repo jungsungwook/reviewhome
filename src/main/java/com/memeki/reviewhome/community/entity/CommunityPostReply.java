@@ -1,7 +1,6 @@
 package com.memeki.reviewhome.community.entity;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import javax.persistence.*;
 
@@ -15,29 +14,29 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Entity
-@Table(name = "community_post")
-@SQLDelete(sql = "UPDATE community_post SET is_deleted = true WHERE id = ?")
+@Table(name = "community_post_reply")
+@SQLDelete(sql = "UPDATE community_post_reply SET is_deleted = true WHERE id = ?")
 @Where(clause = "is_deleted = false")
 @Getter
 @Setter
 @ToString()
 @NoArgsConstructor
-public class CommunityPost {
+public class CommunityPostReply {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "post_type")
-    private String postType;
-
-    @Column(name = "community_uuid")
-    private String communityUuid;
-
-    @Column(name = "title")
-    private String title;
+    @Column(name = "post_id")
+    private Long postId;
 
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "is_reply")
+    private Boolean isReply;
+
+    @Column(name = "reply_id")
+    private Long replyId;
 
     @Column(name = "created_by")
     private long createdBy;
@@ -65,16 +64,4 @@ public class CommunityPost {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
-    @Transient
-    private int likeCount;
-
-    @Transient
-    private int viewCount;
-
-    @Transient
-    private int replyCount;
-
-    @Transient
-    private List<CommunityPostReply> replies;
 }
