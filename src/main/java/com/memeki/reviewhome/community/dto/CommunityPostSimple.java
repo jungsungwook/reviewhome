@@ -3,6 +3,7 @@ package com.memeki.reviewhome.community.dto;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.memeki.reviewhome.community.entity.CommunityPost;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,4 +26,17 @@ public class CommunityPostSimple {
     private int likeCount;
     private int viewCount;
     private int replyCount;
+
+    public CommunityPostSimple(CommunityPost post) {
+        this.id = post.getId();
+        this.postType = post.getPostType();
+        this.communityUuid = post.getCommunityUuid();
+        this.title = post.getTitle();
+        this.content = post.getContent();
+        this.createdAt = post.getCreatedAt();
+        this.createdBy = post.getCreatedBy();
+        this.likeCount = post.getLikeCount();
+        this.viewCount = post.getViewCount();
+        this.replyCount = post.getReplyCount();
+    }
 }
