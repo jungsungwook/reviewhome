@@ -7,6 +7,7 @@ import com.memeki.reviewhome.community.dto.CommunityDefaultResponse;
 import com.memeki.reviewhome.community.dto.CommunityEnterRequest;
 import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
 import com.memeki.reviewhome.community.dto.CommunityPostDetailResponse;
+import com.memeki.reviewhome.community.dto.CommunityPostSimple;
 import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
 import com.memeki.reviewhome.community.dto.CommunityResponse;
 import com.memeki.reviewhome.community.dto.CreatePostReplyRequest;
@@ -16,6 +17,8 @@ import com.memeki.reviewhome.community.service.CommunityService;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
 
 import io.swagger.v3.oas.annotations.Parameter;
+
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -65,6 +68,13 @@ public class CommunityController {
                         @RequestParam Long id) {
                 CommunityPostDetailResponse response = new CommunityPostDetailResponse();
                 response.setCommunityPost(communityService.getCommunityPostById(id));
+                CommunityPostSimple prevPost = communityService.getPrevPost(id);
+                CommunityPostSimple nextPost = communityService.getNextPost(id);
+                response.setPreviousPost(prevPost);
+                response.setNextPost(nextPost);
+                List<CommunityPostSimple> nearList = communityService.getNearPosts(id, 11);
+                response.setNearPosts(nearList);
+                response.setStatusCode(200);
                 return ResponseEntity.ok(response);
         }
 

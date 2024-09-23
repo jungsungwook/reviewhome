@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.memeki.reviewhome.community.entity.CommunityPost;
-import com.memeki.reviewhome.community.entity.CommunityPostReply;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,4 +18,7 @@ import lombok.ToString;
 public class CommunityPostDetailResponse {
     private int statusCode;
     private CommunityPost communityPost;
+    private CommunityPostSimple previousPost;
+    private CommunityPostSimple nextPost;
+    private List<CommunityPostSimple> nearPosts;
 }

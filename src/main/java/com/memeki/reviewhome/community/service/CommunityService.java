@@ -1,6 +1,7 @@
 package com.memeki.reviewhome.community.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -298,15 +299,95 @@ public class CommunityService {
         return request;
     }
 
-    public void createCommunityPostComment(CreatePostReplyRequest body){
+    public void createCommunityPostComment(CreatePostReplyRequest body) {
         CommunityPostReply reply = new CommunityPostReply();
         reply.setPostId(body.getPostId());
         reply.setContent(body.getContent());
         reply.setCreatedBy(body.getCreatedBy());
-        if(body.getIsReply() != null && body.getIsReply()){
+        if (body.getIsReply() != null && body.getIsReply()) {
             reply.setIsReply(true);
             reply.setReplyId(body.getReplyId());
         }
         postReplyRepository.save(reply);
+    }
+
+    public CommunityPostSimple getPrevPost(Long id) {
+        CommunityPost post = communityPostRepository.findById(id)
+                .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
+        CommunityPost prevPost = communityPostRepository.findTop1ByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(
+                post.getCommunityUuid(), post.getCreatedAt());
+        if (prevPost == null) {
+            return null;
+        }
+        return new CommunityPostSimple(prevPost);
+    }
+
+    public CommunityPostSimple getNextPost(Long id) {
+        CommunityPost post = communityPostRepository.findById(id)
+                .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
+        CommunityPost nextPost = communityPostRepository.findTop1ByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(
+                post.getCommunityUuid(), post.getCreatedAt());
+        if (nextPost == null) {
+            return null;
+        }
+        return new CommunityPostSimple(nextPost);
+    }
+
+    public List<CommunityPostSimple> getNearPosts(Long id, int count) {
+        CommunityPost currentPost = communityPostRepository.findById(id)
+                .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
+        List<CommunityPost> posts = new ArrayList<>();
+        int aboveCount = count / 2;
+        int belowCount = count - aboveCount - 1; // 현재 포스트를 고려하여 1을 뺍니다.
+    
+        // 위쪽 포스트 가져오기
+        List<CommunityPost> abovePosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(
+                currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, aboveCount))
+                .getContent();
+    
+        // 아래쪽 포스트 가져오기
+        List<CommunityPost> belowPosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(
+                currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, belowCount))
+                .getContent();
+    
+        // 위쪽 포스트 추가 (역순으로 추가)
+        posts.addAll(abovePosts);
+    
+        // 현재 포스트 추가
+        posts.add(currentPost);
+    
+        // 아래쪽 포스트 추가
+        posts.addAll(belowPosts);
+    
+        // 부족한 경우 반대쪽에서 채우기
+        int remaining = count - posts.size();
+        if (remaining > 0) {
+            if (abovePosts.size() < aboveCount) {
+                // 위쪽이 부족한 경우, 아래쪽에서 더 가져오기
+                List<CommunityPost> additionalBelowPosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(
+                        currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, belowCount + remaining))
+                        .getContent();
+                posts.addAll(additionalBelowPosts.subList(belowPosts.size(), Math.min(additionalBelowPosts.size(), belowCount + remaining)));
+            } else {
+                // 아래쪽이 부족한 경우, 위쪽에서 더 가져오기
+                List<CommunityPost> additionalAbovePosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(
+                        currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, aboveCount + remaining))
+                        .getContent();
+                posts.addAll(0, additionalAbovePosts.subList(abovePosts.size(), Math.min(additionalAbovePosts.size(), aboveCount + remaining)));
+            }
+        }
+    
+        // 최종적으로 시간 순으로 정렬
+        posts.sort(Comparator.comparing(CommunityPost::getCreatedAt).reversed());
+    
+        // 현재 포스트의 인덱스 찾기
+        int currentIndex = posts.indexOf(currentPost);
+    
+        // 현재 포스트를 중심으로 원하는 개수만큼 잘라내기
+        int startIndex = Math.max(0, currentIndex - aboveCount);
+        int endIndex = Math.min(posts.size(), startIndex + count);
+        startIndex = Math.max(0, endIndex - count);
+    
+        return Arrays.asList(convertToCommunityPostSimple(posts.subList(startIndex, endIndex)));
     }
 }
