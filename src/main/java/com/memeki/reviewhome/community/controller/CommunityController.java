@@ -15,6 +15,8 @@ import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.service.CommunityService;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
 
+import io.swagger.v3.oas.annotations.Parameter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,7 +38,7 @@ public class CommunityController {
         @GetMapping("/building")
         public ResponseEntity<CommunityDefaultResponse> getCommunityByCommunityUuid(
                         @RequestParam String uuid,
-                        @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
                 CommunityDefaultResponse response = new CommunityDefaultResponse();
                 response.setCommunity(
                                 communityService.getCommunityByCommunityUuid(uuid,
@@ -89,7 +91,7 @@ public class CommunityController {
         @PreAuthorize("isAuthenticated()")
         public ResponseEntity<Void> createCommunityPost(
                         @RequestBody CreatePostRequest body,
-                        @AuthenticationPrincipal UserPrincipal userDetails) {
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 body.setCreatedBy(userDetails.getId());
                 communityService.createCommunityPost(body);
                 return ResponseEntity.ok().build();
@@ -99,7 +101,7 @@ public class CommunityController {
         @PreAuthorize("isAuthenticated()")
         public ResponseEntity<Void> createCommunityPostComment(
                         @RequestBody CreatePostReplyRequest body,
-                        @AuthenticationPrincipal UserPrincipal userDetails) {
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 body.setCreatedBy(userDetails.getId());
                 communityService.createCommunityPostComment(body);
                 return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -109,7 +111,7 @@ public class CommunityController {
         public ResponseEntity<CommunityResponse> getDefaultBuildingCommunity(
                         @RequestParam String uuid,
                         @RequestParam(required = false) String type2,
-                        @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
                 CommunityResponse response = new CommunityResponse();
                 if (type2 == null) {
                         type2 = "default";
@@ -133,7 +135,7 @@ public class CommunityController {
         @PreAuthorize("isAuthenticated()")
         public ResponseEntity<CommunityResponse> getMethodName(
                         @RequestBody CommunityEnterRequest body,
-                        @AuthenticationPrincipal UserPrincipal userDetails) {
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 CommunityResponse response = new CommunityResponse();
                 body.setUserId(userDetails.getId());
                 Community community = communityService.enterCommunity(body);
@@ -146,7 +148,7 @@ public class CommunityController {
         @PreAuthorize("isAuthenticated()")
         public ResponseEntity<CommunityResponse> leaveCommunity(
                         @RequestBody CommunityLeaveRequest body,
-                        @AuthenticationPrincipal UserPrincipal userDetails) {
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 CommunityResponse response = new CommunityResponse();
                 body.setUserId(userDetails.getId());
                 communityService.leaveCommunity(body);

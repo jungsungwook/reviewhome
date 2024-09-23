@@ -1,7 +1,6 @@
 package com.memeki.reviewhome.common.config;
 
 import java.util.Arrays;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
@@ -14,7 +13,11 @@ import springfox.documentation.service.SecurityScheme;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.service.BasicAuth;
 import springfox.documentation.service.AuthorizationScope;
+import springfox.documentation.spi.service.contexts.ParameterContext;
+import springfox.documentation.spi.service.ParameterBuilderPlugin;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
+import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
 
 @Configuration
 @EnableSwagger2
@@ -23,8 +26,9 @@ public class SwaggerConfig {
     @Bean
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2)
-                .securityContexts(Arrays.asList(securityContext()))
-                .securitySchemes(Arrays.asList(basicAuthScheme()))
+                // .securityContexts(Arrays.asList(securityContext()))
+                // .securitySchemes(Arrays.asList(basicAuthScheme()))
+                .ignoredParameterTypes(UserPrincipal.class)
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.memeki.reviewhome"))
                 .paths(PathSelectors.any())
@@ -43,5 +47,23 @@ public class SwaggerConfig {
 
     private SecurityReference basicAuthReference() {
         return new SecurityReference("basicAuth", new AuthorizationScope[0]);
+    }
+
+    @Bean
+    public ParameterBuilderPlugin authenticationPrincipalHider() {
+        return new ParameterBuilderPlugin() {
+            @Override
+            public void apply(ParameterContext parameterContext) {
+                if (parameterContext.resolvedMethodParameter().hasParameterAnnotation(AuthenticationPrincipal.class) ||
+                        parameterContext.resolvedMethodParameter().getParameterType().equals(UserPrincipal.class)) {
+                    parameterContext.parameterBuilder().hidden(true);
+                }
+            }
+
+            @Override
+            public boolean supports(DocumentationType documentationType) {
+                return true; // Support all documentation types
+            }
+        };
     }
 }
