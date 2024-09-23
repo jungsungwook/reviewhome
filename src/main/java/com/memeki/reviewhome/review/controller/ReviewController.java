@@ -20,6 +20,9 @@ import com.memeki.reviewhome.review.dto.ReviewLikeDto;
 import com.memeki.reviewhome.review.dto.ReviewResponseDto;
 import com.memeki.reviewhome.review.entity.Review;
 import com.memeki.reviewhome.review.service.ReviewService;
+
+import io.swagger.v3.oas.annotations.Parameter;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,7 +50,7 @@ public class ReviewController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReviewLikeDto.Response> likeReview(
             @RequestBody ReviewLikeDto.Request body,
-            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
         int status = reviewService.likeReview(body.getReviewId(), userDetails.getId());
         ReviewLikeDto.Response response = new ReviewLikeDto.Response();
         response.setStatusCode(200);
@@ -59,7 +62,7 @@ public class ReviewController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReivewReplyDto.Response> createReviewReply(
             @RequestBody ReivewReplyDto.Request body,
-            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
         body.setUserId(userDetails.getId());
         reviewService.createReviewReply(body);
         ReivewReplyDto.Response response = new ReivewReplyDto.Response();
@@ -71,7 +74,7 @@ public class ReviewController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReviewResponseDto> createReview(
             @RequestBody ReviewCreateDto body,
-            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
         User user = userService.getUserById(userDetails.getId());
         body.setUserId(user.getId());
         reviewService.createReview(body);
@@ -81,7 +84,7 @@ public class ReviewController {
     @GetMapping("/building")
     public ResponseEntity<ReviewResponseDto> getReviewByBuildingId(
             @RequestParam String uuid,
-            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
         List<BuildingReview> result = reviewService.getAllReviewByBuildingId(uuid,
                 userDetails != null ? userDetails.getId() : null);
         ReviewResponseDto response = new ReviewResponseDto();
