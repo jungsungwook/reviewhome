@@ -6,6 +6,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,10 +24,12 @@ import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.entity.CommunityEnterHistory;
 import com.memeki.reviewhome.community.entity.CommunityPost;
 import com.memeki.reviewhome.community.entity.CommunityPostReply;
+import com.memeki.reviewhome.community.entity.CommunityPostViewHistory;
 import com.memeki.reviewhome.community.repository.CommunityEnterHistoryRepository;
 import com.memeki.reviewhome.community.repository.CommunityPostLikeHistoryRepository;
 import com.memeki.reviewhome.community.repository.CommunityPostReplyRepository;
 import com.memeki.reviewhome.community.repository.CommunityPostRepository;
+import com.memeki.reviewhome.community.repository.CommunityPostViewHistoryRepository;
 import com.memeki.reviewhome.community.repository.CommunityRepository;
 import com.memeki.reviewhome.global.exception.DefaultException;
 import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
@@ -55,6 +59,9 @@ public class CommunityService {
 
     @Autowired
     private CommunityPostLikeHistoryRepository postLikeHistoryRepository;
+
+    @Autowired
+    private CommunityPostViewHistoryRepository postViewHistoryRepository;
 
     public CommunityService(
             PostAddressInfoRepository postAddressInfoRepository,
@@ -278,13 +285,34 @@ public class CommunityService {
         return pagination;
     }
 
-    public CommunityPost getCommunityPostById(Long id) {
+    public CommunityPost getCommunityPostById(Long id, Long userId, HttpServletRequest request) {
         CommunityPost post = communityPostRepository.findById(id)
                 .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
         List<CommunityPostReply> replies = postReplyRepository.findAllByPostId(id);
         post.setReplies(replies);
         post.setReplyCount(replies.size());
+        if (userId != null) {
+            post.setIsLiked(postLikeHistoryRepository.existsByPostIdAndCreatedBy(id, userId));
+            post.setIsMine(post.getCreatedBy() == userId ? true : false);
+            if (!postViewHistoryRepository.existsByPostIdAndCreatedBy(id, userId)) {
+                CommunityPostViewHistory viewHistory = new CommunityPostViewHistory();
+                viewHistory.setPostId(id);
+                viewHistory.setCreatedBy(userId);
+                postViewHistoryRepository.save(viewHistory);
+            }
+        } else {
+            post.setIsLiked(false);
+            post.setIsMine(false);
+            CommunityPostViewHistory viewHistory = new CommunityPostViewHistory();
+            viewHistory.setPostId(id);
+
+        }
+        post.setLikeCount(
+                postLikeHistoryRepository.countByPostId(id).intValue());
         communityPostRepository.save(post);
+
+        post.setViewCount(
+                postViewHistoryRepository.countByPostId(id).intValue());
         return post;
     }
 
@@ -339,55 +367,63 @@ public class CommunityService {
         List<CommunityPost> posts = new ArrayList<>();
         int aboveCount = count / 2;
         int belowCount = count - aboveCount - 1; // 현재 포스트를 고려하여 1을 뺍니다.
-    
+
         // 위쪽 포스트 가져오기
-        List<CommunityPost> abovePosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(
-                currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, aboveCount))
+        List<CommunityPost> abovePosts = communityPostRepository
+                .findAllByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(
+                        currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, aboveCount))
                 .getContent();
-    
+
         // 아래쪽 포스트 가져오기
-        List<CommunityPost> belowPosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(
-                currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, belowCount))
+        List<CommunityPost> belowPosts = communityPostRepository
+                .findAllByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(
+                        currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, belowCount))
                 .getContent();
-    
+
         // 위쪽 포스트 추가 (역순으로 추가)
         posts.addAll(abovePosts);
-    
+
         // 현재 포스트 추가
         posts.add(currentPost);
-    
+
         // 아래쪽 포스트 추가
         posts.addAll(belowPosts);
-    
+
         // 부족한 경우 반대쪽에서 채우기
         int remaining = count - posts.size();
         if (remaining > 0) {
             if (abovePosts.size() < aboveCount) {
                 // 위쪽이 부족한 경우, 아래쪽에서 더 가져오기
-                List<CommunityPost> additionalBelowPosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(
-                        currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, belowCount + remaining))
+                List<CommunityPost> additionalBelowPosts = communityPostRepository
+                        .findAllByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(
+                                currentPost.getCommunityUuid(), currentPost.getCreatedAt(),
+                                PageRequest.of(0, belowCount + remaining))
                         .getContent();
-                posts.addAll(additionalBelowPosts.subList(belowPosts.size(), Math.min(additionalBelowPosts.size(), belowCount + remaining)));
+                posts.addAll(additionalBelowPosts.subList(belowPosts.size(),
+                        Math.min(additionalBelowPosts.size(), belowCount + remaining)));
             } else {
                 // 아래쪽이 부족한 경우, 위쪽에서 더 가져오기
-                List<CommunityPost> additionalAbovePosts = communityPostRepository.findAllByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(
-                        currentPost.getCommunityUuid(), currentPost.getCreatedAt(), PageRequest.of(0, aboveCount + remaining))
+                List<CommunityPost> additionalAbovePosts = communityPostRepository
+                        .findAllByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(
+                                currentPost.getCommunityUuid(), currentPost.getCreatedAt(),
+                                PageRequest.of(0, aboveCount + remaining))
                         .getContent();
-                posts.addAll(0, additionalAbovePosts.subList(abovePosts.size(), Math.min(additionalAbovePosts.size(), aboveCount + remaining)));
+                posts.addAll(0, additionalAbovePosts.subList(abovePosts.size(),
+                        Math.min(additionalAbovePosts.size(), aboveCount + remaining)));
             }
         }
-    
+
         // 최종적으로 시간 순으로 정렬
         posts.sort(Comparator.comparing(CommunityPost::getCreatedAt).reversed());
-    
+
         // 현재 포스트의 인덱스 찾기
         int currentIndex = posts.indexOf(currentPost);
-    
+
         // 현재 포스트를 중심으로 원하는 개수만큼 잘라내기
         int startIndex = Math.max(0, currentIndex - aboveCount);
         int endIndex = Math.min(posts.size(), startIndex + count);
         startIndex = Math.max(0, endIndex - count);
-    
+
         return Arrays.asList(convertToCommunityPostSimple(posts.subList(startIndex, endIndex)));
     }
 }

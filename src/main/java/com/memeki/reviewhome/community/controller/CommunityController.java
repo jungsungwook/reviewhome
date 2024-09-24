@@ -20,6 +20,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -65,9 +67,12 @@ public class CommunityController {
 
         @GetMapping("/building/post/detail")
         public ResponseEntity<CommunityPostDetailResponse> getCommunitiyPostDetailById(
-                        @RequestParam Long id) {
+                        @RequestParam Long id,
+                        @Parameter(hidden = true) HttpServletRequest request,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 CommunityPostDetailResponse response = new CommunityPostDetailResponse();
-                response.setCommunityPost(communityService.getCommunityPostById(id));
+                response.setCommunityPost(communityService.getCommunityPostById(id,
+                                userDetails != null ? userDetails.getId() : null, request));
                 CommunityPostSimple prevPost = communityService.getPrevPost(id);
                 CommunityPostSimple nextPost = communityService.getNextPost(id);
                 response.setPreviousPost(prevPost);
