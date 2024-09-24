@@ -10,15 +10,18 @@ import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
 import com.memeki.reviewhome.townreview.entity.TownReview;
 import com.memeki.reviewhome.townreview.repository.TownReviewRepository;
 import com.memeki.reviewhome.townreview.repository.TownReviewContentRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class TownReviewService {
+    @Autowired
     private TownReviewContentRepository townReviewContentRepository;
+    @Autowired
     private TownReviewRepository townReviewRepository;
 
-    @Autowired
     public TownReviewService(TownReviewRepository townReviewRepository, TownReviewContentRepository townReviewContentRepository) {
         this.townReviewRepository = townReviewRepository;
         this.townReviewContentRepository = townReviewContentRepository;
@@ -43,17 +46,21 @@ public class TownReviewService {
 //            throw new Exception("Review not created");
 //        }
 //    }
-    //towncreateReview를 테스트하고싶어
     public String towncreateReview(TownReviewCreateDto townReviewCreateDto) {
         if(townReviewCreateDto.getContent()==null){
             throw new IllegalArgumentException("공백을 입력하시면 안됩니다.");
+        }
+        if(townReviewCreateDto.getUserId() == null){
+            throw new IllegalArgumentException("userId가 null입니다.");
         }
         try {
             TownReview townreview = new TownReview();
             townreview.setType("town");
             townreview.setTargetId(townReviewCreateDto.getTargetId());
+//            townreview.setCreatedBy(String.valueOf(townReviewCreateDto.getUserId()));
             townreview.setCreatedBy(townReviewCreateDto.getUserId());
             townreview.setContent(townReviewCreateDto.getContent());
+            townreview.setTitle(townReviewCreateDto.getTitle());
             townReviewRepository.save(townreview);
             //TownReview savedTownReview = townReviewRepository.save(townreview);
 
@@ -104,21 +111,50 @@ public class TownReviewService {
     public TownReviewResponseDto findReviewByTypeAndTargetId(String type, String targetId) {
         TownReview townReview = townReviewRepository.findReviewByTypeAndTargetId(type, targetId);
         TownReviewResponseDto dto = new TownReviewResponseDto();
-        dto.setTownReview(townReview);
+        List<TownReview> townReviewList= new ArrayList<>();
+        townReviewList.add(townReview);
+        dto.setTownReview(townReviewList);
         dto.setStatusCode(200);
         return dto;
     }
 
-    public void updateReviewContentByTypeAndUser(String type, String newContent, String targetId) {
+    public void updateReviewContentByTypeAndUser(String type, String content, String targetId) {
+        if(type==null || type.isEmpty()){
+            throw new IllegalArgumentException("type이 올바르지 않습니다.");
+        }
+        if(content==null || content.isEmpty()){
+            throw new IllegalArgumentException("리뷰가 올바르지않습니다.");
+        }
+        if(targetId==null || targetId.isEmpty()){
+            throw new IllegalArgumentException("targetId가 올바르지 않습니다.");
+        }
+        if(townReviewRepository.existsByTypeAndContentAndTargetId(type, content, targetId)){
+            throw new IllegalArgumentException("리뷰가 이미 동일합니다.");
+        }
+
         List<TownReview> reviews = townReviewRepository.findReviewByType(type);
         for (TownReview review : reviews) {
             if (review.getTargetId().equals(targetId)) {
-                review.setContent(newContent);
+                review.setContent(content);
                 townReviewRepository.save(review);
             }
         }
 
 
+
+    }
+
+    public void deleteReview(String targetId) {//미완성
+        TownReview review = townReviewRepository.findByTargetId(targetId);
+        if (review == null) {
+            throw new IllegalArgumentException("해당 리뷰가 없습니다. targetId=" + targetId);
+        }
+        if(review.isDeleted()){
+            throw new IllegalArgumentException("이미 삭제된 리뷰입니다.");
+        }
+
+        review.setDeleted(true);
+        townReviewRepository.save(review);
     }
 
 }

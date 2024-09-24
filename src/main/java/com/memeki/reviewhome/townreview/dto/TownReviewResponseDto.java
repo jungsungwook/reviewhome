@@ -7,6 +7,7 @@ import com.memeki.reviewhome.townreview.entity.TownReviewContent;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,6 +15,6 @@ import lombok.Setter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TownReviewResponseDto {
     private int statusCode;
-    private TownReview townReview;
+    private List<TownReview> townReview;
     private TownReviewContent townReviewContent;
 }
