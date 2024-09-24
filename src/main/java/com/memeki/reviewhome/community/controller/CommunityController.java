@@ -7,6 +7,8 @@ import com.memeki.reviewhome.community.dto.CommunityDefaultResponse;
 import com.memeki.reviewhome.community.dto.CommunityEnterRequest;
 import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
 import com.memeki.reviewhome.community.dto.CommunityPostDetailResponse;
+import com.memeki.reviewhome.community.dto.CommunityPostLikeReqeust;
+import com.memeki.reviewhome.community.dto.CommunityPostLikeResponse;
 import com.memeki.reviewhome.community.dto.CommunityPostSimple;
 import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
 import com.memeki.reviewhome.community.dto.CommunityResponse;
@@ -110,6 +112,18 @@ public class CommunityController {
                 body.setCreatedBy(userDetails.getId());
                 communityService.createCommunityPost(body);
                 return ResponseEntity.ok().build();
+        }
+
+        @PostMapping("/building/post/like")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<CommunityPostLikeResponse> postLike(
+                        @RequestBody CommunityPostLikeReqeust body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                CommunityPostLikeResponse response = new CommunityPostLikeResponse();
+                                body.setCreatedBy(userDetails.getId());
+                communityService.postLike(body, response);
+                response.setStatusCode(200);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
 
         @PostMapping("/building/post/comment")

@@ -30,7 +30,7 @@ public class CommunityPostViewHistory {
     private Long postId;
 
     @Column(name = "created_by")
-    private long createdBy;
+    private Long createdBy;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import com.memeki.reviewhome.community.dto.CommunityEnterRequest;
 import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
+import com.memeki.reviewhome.community.dto.CommunityPostLikeReqeust;
+import com.memeki.reviewhome.community.dto.CommunityPostLikeResponse;
 import com.memeki.reviewhome.community.dto.CommunityPostPagination;
 import com.memeki.reviewhome.community.dto.CommunityPostSimple;
 import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
@@ -23,6 +25,7 @@ import com.memeki.reviewhome.community.dto.CreatePostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.entity.CommunityEnterHistory;
 import com.memeki.reviewhome.community.entity.CommunityPost;
+import com.memeki.reviewhome.community.entity.CommunityPostLikeHistory;
 import com.memeki.reviewhome.community.entity.CommunityPostReply;
 import com.memeki.reviewhome.community.entity.CommunityPostViewHistory;
 import com.memeki.reviewhome.community.repository.CommunityEnterHistoryRepository;
@@ -195,6 +198,8 @@ public class CommunityService {
             post.setLikeCount((int) likeCount);
             long replyCount = postReplyRepository.countCommunityPostReplyByPostId(post.getId());
             post.setReplyCount((int) replyCount);
+            long viewCount = postViewHistoryRepository.countByPostId(post.getId());
+            post.setViewCount((int) viewCount);
         }
         return posts;
     }
@@ -248,6 +253,8 @@ public class CommunityService {
             post.setLikeCount((int) likeCount);
             long replyCount = postReplyRepository.countCommunityPostReplyByPostId(post.getId());
             post.setReplyCount((int) replyCount);
+            long viewCount = postViewHistoryRepository.countByPostId(post.getId());
+            post.setViewCount((int) viewCount);
         }
 
         CommunityPostsResponse response = new CommunityPostsResponse();
@@ -305,11 +312,35 @@ public class CommunityService {
             post.setIsMine(false);
             CommunityPostViewHistory viewHistory = new CommunityPostViewHistory();
             viewHistory.setPostId(id);
-
+            viewHistory.setCreatedBy(null);
+            postViewHistoryRepository.save(viewHistory);
         }
         post.setLikeCount(
                 postLikeHistoryRepository.countByPostId(id).intValue());
         communityPostRepository.save(post);
+        String ip = request.getHeader("X-Forwarded-For");
+        System.out.println("> X-FORWARDED-FOR : " + ip);
+
+        if (ip == null) {
+            ip = request.getHeader("Proxy-Client-IP");
+            System.out.println("> Proxy-Client-IP : " + ip);
+        }
+        if (ip == null) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+            System.out.println("> WL-Proxy-Client-IP : " + ip);
+        }
+        if (ip == null) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+            System.out.println("> HTTP_CLIENT_IP : " + ip);
+        }
+        if (ip == null) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+            System.out.println("> HTTP_X_FORWARDED_FOR : " + ip);
+        }
+        if (ip == null) {
+            ip = request.getRemoteAddr();
+            System.out.println("> getRemoteAddr : " + ip);
+        }
 
         post.setViewCount(
                 postViewHistoryRepository.countByPostId(id).intValue());
@@ -425,5 +456,20 @@ public class CommunityService {
         startIndex = Math.max(0, endIndex - count);
 
         return Arrays.asList(convertToCommunityPostSimple(posts.subList(startIndex, endIndex)));
+    }
+
+    public void postLike(CommunityPostLikeReqeust body, CommunityPostLikeResponse response) {
+        CommunityPostLikeHistory existHistory = postLikeHistoryRepository
+                .findByPostIdAndCreatedBy(body.getPostId(), body.getCreatedBy());
+        if (existHistory != null) {
+            postLikeHistoryRepository.delete(existHistory);
+            response.setLiked(0);
+        } else {
+            CommunityPostLikeHistory newHistory = new CommunityPostLikeHistory();
+            newHistory.setPostId(body.getPostId());
+            newHistory.setCreatedBy(body.getCreatedBy());
+            postLikeHistoryRepository.save(newHistory);
+            response.setLiked(1);
+        }
     }
 }
