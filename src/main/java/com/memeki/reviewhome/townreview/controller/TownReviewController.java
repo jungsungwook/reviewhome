@@ -8,8 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.memeki.reviewhome.global.security.entity.User;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
@@ -17,7 +16,6 @@ import com.memeki.reviewhome.global.security.service.UserService;
 //import com.memeki.reviewhome.review.dto.BuildingReview;
 //import com.memeki.reviewhome.review.dto.ReivewReplyDto;
 //import com.memeki.reviewhome.review.dto.ReviewLikeDto;
-import org.springframework.web.bind.annotation.PutMapping;
 import com.memeki.reviewhome.townreview.dto.TownReviewCreateDto;
 import com.memeki.reviewhome.townreview.dto.TownReviewResponseDto;
 import com.memeki.reviewhome.townreview.entity.TownReview;
@@ -27,44 +25,53 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+
 @RestController
 @RequestMapping(value = "/api/townreview")
 public class TownReviewController {
     @Autowired
-    private TownReviewService townReviewService;
+    private  TownReviewService townReviewService;
     @Autowired
-    private UserService userService;
+    private  UserService userService;
 
-    @GetMapping("")
-    public ResponseEntity<TownReviewResponseDto> getReviewByReviewId(@RequestParam int reviewId) throws Exception{
-        TownReview result = townReviewService.getReviewByReviewId(reviewId);
-        TownReviewResponseDto response = new TownReviewResponseDto();
-        response.setTownReview(result);
-        response.setStatusCode(200);
-        return ResponseEntity.ok(response);
-    }
-
-//    @PostMapping("/town")
-//    @PreAuthorize("isAuthenticated()")
-//    public ResponseEntity<TownReviewResponseDto> towncreateReview(
-//            @RequestBody TownReviewCreateDto body,
-//            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
-//        User user = userService.getUserById(userDetails.getId());
-//        body.setUserId(user.getId());
-//        townReviewService.towncreateReview(body);
-//
-//        return ResponseEntity.ok().build();
+//    @GetMapping("")
+//    public ResponseEntity<TownReviewResponseDto> getReviewByReviewId(@RequestParam int reviewId) throws Exception{
+//        TownReview result = townReviewService.getReviewByReviewId(reviewId);
+//        TownReviewResponseDto response = new TownReviewResponseDto();
+//        response.setTownReview(result);
+//        response.setStatusCode(200);
+//        return ResponseEntity.ok(response);
 //    }
 
-    @PostMapping("/town")//로그인없이 리뷰를 작성하는 코드
-    public String createTownReview(@RequestBody TownReviewCreateDto townReviewCreateDto) {
-        return townReviewService.towncreateReview(townReviewCreateDto);
+    @PostMapping("/town")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TownReviewResponseDto> towncreateReview(
+            @RequestBody TownReviewCreateDto body,
+            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        if(userDetails==null || townReviewService==null){
+        }
+//        System.out.println("User ID: " + userDetails.getId());
+
+        User user = userService.getUserById(userDetails.getId());
+        if(user==null){
+            throw new Exception("사용자 정보를 찾을 수 없습니다.");
+        }
+        body.setUserId(user.getId());
+        townReviewService.towncreateReview(body);
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/town")//
-    public List<TownReview> findAllTownReviewsByTypeAndCreatedBy(@RequestParam String type, @RequestParam Long createdBy) {
-        return townReviewService.findAllTownReviewsByTypeAndCreatedBy(type, createdBy);
-    }
+//    @PostMapping("/town")//로그인없이 리뷰를 작성하는 코드
+//    public String createTownReview(@RequestBody TownReviewCreateDto townReviewCreateDto) {
+//    return townReviewService.towncreateReview(townReviewCreateDto);
+//    }
+
+//  }
+
+//    @GetMapping("/town")//
+//    public List<TownReview> findAllTownReviewsByTypeAndCreatedBy(@RequestParam String type, @RequestParam Long createdBy) {
+//        return townReviewService.findAllTownReviewsByTypeAndCreatedBy(type, createdBy);
+//    }
 
 //    @GetMapping("/town")
 //    public ResponseEntity<List<TownReviewResponseDto>> findReviewsByType(@RequestParam String type) {
@@ -72,20 +79,27 @@ public class TownReviewController {
 //        return ResponseEntity.ok(response);
 //    }
 
-    @GetMapping("/town/{targetId}")
-    public ResponseEntity<TownReviewResponseDto> findReviewByTypeAndTargetId(@RequestParam String type, @RequestParam String targetId) {
-        TownReviewResponseDto response = townReviewService.findReviewByTypeAndTargetId(type, targetId);
-        return ResponseEntity.ok(response);
-    }
+        @GetMapping("/town/{targetId}")
+        public ResponseEntity<TownReviewResponseDto> findReviewByTypeAndTargetId (@RequestParam String type, @RequestParam String targetId){
+            TownReviewResponseDto response = townReviewService.findReviewByTypeAndTargetId(type, targetId);
+            return ResponseEntity.ok(response);
+        }
 
-    @PutMapping("/town/{targetId}")
-    public ResponseEntity<Void> updateReviewContentByTypeAndUser(@RequestBody Map<String, String> body) {
-        String type = body.get("type");
-        String newContent = body.get("newContent");
-        String targetId = body.get("targetId");
-        townReviewService.updateReviewContentByTypeAndUser(type, newContent, targetId);
-        return ResponseEntity.ok().build();
-    }
+        @PutMapping("/town/{targetId}") //@AuthenticationPrincipal 안되서 구현안된거 바로 가능
+        public ResponseEntity<Void> updateReviewContentByTypeAndUser (
+                @RequestBody Map < String, String > body){
+            String type = body.get("type");
+            String newContent = body.get("content");
+            String targetId = body.get("targetId");
+            townReviewService.updateReviewContentByTypeAndUser(type, newContent, targetId);
+            return ResponseEntity.ok().build();
+        }
 
-}
+        @DeleteMapping("/town/{targetId}")//@AuthenticationPrincipal 안되서 구현안된거 바로 가능
+        public ResponseEntity<Void> deletReview(@PathVariable String targetId) {
+            townReviewService.deleteReview(targetId);
+            return ResponseEntity.ok().build();
+        }
+
+    }
 

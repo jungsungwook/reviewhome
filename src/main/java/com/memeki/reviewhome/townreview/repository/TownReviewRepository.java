@@ -11,5 +11,7 @@ public interface TownReviewRepository extends JpaRepository<TownReview, Integer>
     List<TownReview> findReviewByType(String type);
 
     List<TownReview> findTownReviewByTypeAndCreatedBy(String type, Long createdBy);
+    boolean existsByTypeAndContentAndTargetId(String type, String content, String targetId);
+    TownReview findByTargetId(String targetId);
 }
 
