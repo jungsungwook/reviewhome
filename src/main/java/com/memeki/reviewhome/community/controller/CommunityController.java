@@ -7,6 +7,8 @@ import com.memeki.reviewhome.community.dto.CommunityDefaultResponse;
 import com.memeki.reviewhome.community.dto.CommunityEnterRequest;
 import com.memeki.reviewhome.community.dto.CommunityLeaveRequest;
 import com.memeki.reviewhome.community.dto.CommunityPostDetailResponse;
+import com.memeki.reviewhome.community.dto.CommunityPostLikeReqeust;
+import com.memeki.reviewhome.community.dto.CommunityPostLikeResponse;
 import com.memeki.reviewhome.community.dto.CommunityPostSimple;
 import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
 import com.memeki.reviewhome.community.dto.CommunityResponse;
@@ -19,6 +21,8 @@ import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
 import io.swagger.v3.oas.annotations.Parameter;
 
 import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -65,9 +69,12 @@ public class CommunityController {
 
         @GetMapping("/building/post/detail")
         public ResponseEntity<CommunityPostDetailResponse> getCommunitiyPostDetailById(
-                        @RequestParam Long id) {
+                        @RequestParam Long id,
+                        @Parameter(hidden = true) HttpServletRequest request,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 CommunityPostDetailResponse response = new CommunityPostDetailResponse();
-                response.setCommunityPost(communityService.getCommunityPostById(id));
+                response.setCommunityPost(communityService.getCommunityPostById(id,
+                                userDetails != null ? userDetails.getId() : null, request));
                 CommunityPostSimple prevPost = communityService.getPrevPost(id);
                 CommunityPostSimple nextPost = communityService.getNextPost(id);
                 response.setPreviousPost(prevPost);
@@ -105,6 +112,18 @@ public class CommunityController {
                 body.setCreatedBy(userDetails.getId());
                 communityService.createCommunityPost(body);
                 return ResponseEntity.ok().build();
+        }
+
+        @PostMapping("/building/post/like")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<CommunityPostLikeResponse> postLike(
+                        @RequestBody CommunityPostLikeReqeust body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                CommunityPostLikeResponse response = new CommunityPostLikeResponse();
+                                body.setCreatedBy(userDetails.getId());
+                communityService.postLike(body, response);
+                response.setStatusCode(200);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
 
         @PostMapping("/building/post/comment")
