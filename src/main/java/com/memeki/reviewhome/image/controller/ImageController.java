@@ -3,6 +3,8 @@ package com.memeki.reviewhome.image.controller;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,14 +30,14 @@ public class ImageController {
 
     @PostMapping("/upload")
     @PreAuthorize("isAuthenticated()")
-    public ImageCreateResponse uploadImage(
+    public ResponseEntity<ImageCreateResponse> uploadImage(
             @RequestParam(value = "file", required = true) MultipartFile file,
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws IOException {
         Image result = imageService.uploadImage(file, userDetails.getId());
         ImageCreateResponse response = new ImageCreateResponse();
-        response.setStatusCode(200);
+        response.setStatusCode(201);
         response.setImageUrl(result.getUrl());
-        return response;
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
 }

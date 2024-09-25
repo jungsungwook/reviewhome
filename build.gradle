@@ -60,8 +60,14 @@ dependencies {
 	// https://mvnrepository.com/artifact/io.springfox/springfox-swagger2
 	implementation 'io.springfox:springfox-swagger2:2.6.1'
 	implementation 'org.springframework.session:spring-session-core'
-  implementation 'org.springframework.session:spring-session-jdbc'
+	implementation 'org.springframework.session:spring-session-jdbc'
 	implementation 'com.oracle.oci.sdk:oci-java-sdk-objectstorage:2.47.0'
+	// TwelveMonkeys ImageIO 의존성
+    implementation 'com.twelvemonkeys.imageio:imageio-core:3.8.2'
+    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.8.2'
+    
+    // HEIC 지원을 위한 의존성
+    implementation 'com.twelvemonkeys.imageio:imageio-heif:3.8.2'
 }
 
 tasks.named('test') {

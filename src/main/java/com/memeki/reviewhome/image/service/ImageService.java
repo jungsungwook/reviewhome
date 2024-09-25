@@ -1,7 +1,14 @@
 package com.memeki.reviewhome.image.service;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+
+import javax.imageio.ImageIO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,36 +37,92 @@ public class ImageService {
     @Value("${oci.namespace}")
     private String namespace;
 
-    public Image uploadImage(MultipartFile file, Long userId) throws IOException {
-        Image image = new Image();
-        String originObjectName = file.getOriginalFilename();
-        String uuid = UUID.randomUUID().toString();
-        String savedObjectName = uuid + "_" + originObjectName;
+    private static final List<String> SUPPORTED_IMAGE_TYPES = Arrays.asList(
+            "image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif");
 
-        String contentType = file.getContentType();
-        if (contentType == null || contentType.isEmpty()) {
-            throw new DefaultException(ErrorCode.INVALID_FILE);
+    public Image uploadImage(MultipartFile file, Long userId) throws IOException {
+        try {
+            String originObjectName = file.getOriginalFilename();
+            String contentType = file.getContentType();
+
+            if (contentType == null || contentType.isEmpty()) {
+                throw new DefaultException(ErrorCode.INVALID_FILE);
+            }
+
+            if (!isValidImageFile(contentType, originObjectName)) {
+                throw new DefaultException(ErrorCode.INVALID_FILE);
+            }
+
+            byte[] imageData;
+            long fileSize;
+
+            if (contentType.equals("image/heic") || contentType.equals("image/heif")) {
+                imageData = convertHeicToJpeg(file);
+                contentType = "image/jpeg";
+                fileSize = imageData.length;
+                originObjectName = originObjectName.replaceFirst("(?i)\\.heic$|\\.heif$", ".jpg");
+            } else {
+                imageData = file.getBytes();
+                fileSize = file.getSize();
+            }
+
+            String uuid = UUID.randomUUID().toString();
+            String savedObjectName = uuid + "_" + originObjectName;
+
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucketName(bucketName)
+                    .namespaceName(namespace)
+                    .objectName(savedObjectName)
+                    .contentLength(fileSize)
+                    .contentType(contentType)
+                    .putObjectBody(new ByteArrayInputStream(imageData))
+                    .build();
+
+            objectStorageClient.putObject(putObjectRequest);
+
+            Image image = new Image();
+            image.setUuid(uuid);
+            image.setOriginalName(originObjectName);
+            image.setSavedName(savedObjectName);
+            image.setUrl("https://i.duriburn.com/" + savedObjectName);
+            image.setSize(fileSize);
+            image.setExtension(contentType);
+            image.setCreatedBy(userId);
+
+            return imageRepository.save(image);
+        } catch (DefaultException e) {
+            e.printStackTrace();
+            throw e;
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new DefaultException(ErrorCode.FILE_PROCESSING_ERROR);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new DefaultException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private boolean isValidImageFile(String contentType, String fileName) {
+        return SUPPORTED_IMAGE_TYPES.contains(contentType) ||
+                fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif|webp|heic|heif)$");
+    }
+
+    public byte[] convertHeicToJpeg(MultipartFile file) throws IOException {
+        // HEIC 이미지를 읽음
+        BufferedImage image = ImageIO.read(file.getInputStream());
+
+        if (image == null) {
+            throw new IOException("Failed to read HEIC image");
         }
 
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucketName(bucketName)
-                .namespaceName(namespace)
-                .objectName(savedObjectName)
-                .contentLength(file.getSize())
-                .contentType(contentType)
-                .putObjectBody(file.getInputStream())
-                .build();
+        // JPEG로 변환
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        boolean success = ImageIO.write(image, "jpg", outputStream);
 
-        PutObjectResponse response = objectStorageClient.putObject(putObjectRequest);
-        image.setUuid(uuid);
-        image.setOriginalName(originObjectName);
-        image.setSavedName(savedObjectName);
-        image.setUrl("https://i.duriburn.com/" + savedObjectName);
-        image.setSize(file.getSize());
-        image.setExtension(contentType);
-        image.setCreatedBy(userId);
+        if (!success) {
+            throw new IOException("Failed to convert HEIC to JPEG");
+        }
 
-        Image saveImage = imageRepository.save(image);
-        return saveImage;
+        return outputStream.toByteArray();
     }
 }
