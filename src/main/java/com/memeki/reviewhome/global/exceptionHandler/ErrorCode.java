@@ -17,6 +17,7 @@ public enum ErrorCode {
     ALREADY_NICKNAME(409, "이미 사용중인 닉네임입니다."),
     NEED_PASSWORD(401, "비밀번호가 필요합니다."),
     INVALID_PASSWORD(401, "비밀번호가 일치하지 않습니다."),
+    INVALID_FILE(400, "유효하지 않은 파일입니다."),
     NEED_ENTER(403, "커뮤니티에 가입해야 이용할 수 있습니다.");
     private final int status;
     private final String message;
