@@ -14,6 +14,8 @@ import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
 import com.memeki.reviewhome.community.dto.CommunityResponse;
 import com.memeki.reviewhome.community.dto.CreatePostReplyRequest;
 import com.memeki.reviewhome.community.dto.CreatePostRequest;
+import com.memeki.reviewhome.community.dto.DeletePostRequest;
+import com.memeki.reviewhome.community.dto.EditPostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.service.CommunityService;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
@@ -114,6 +116,26 @@ public class CommunityController {
                 body.setCreatedBy(userDetails.getId());
                 communityService.createCommunityPost(body);
                 return ResponseEntity.ok().build();
+        }
+
+        @PostMapping("/building/post/edit")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<Void> editCommunityPost(
+                        @RequestBody EditPostRequest body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                body.setCreatedBy(userDetails.getId());
+                communityService.editCommunityPost(body);
+                return ResponseEntity.status(HttpStatus.CREATED).build();
+        }
+
+        @PostMapping("/building/post/delete")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<Void> deleteCommunityPost(
+                        @RequestBody DeletePostRequest body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                body.setCreatedBy(userDetails.getId());
+                communityService.deleteCommunityPost(body);
+                return ResponseEntity.status(HttpStatus.CREATED).build();
         }
 
         @PostMapping("/building/post/like")
