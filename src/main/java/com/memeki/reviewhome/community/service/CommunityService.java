@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -36,8 +38,11 @@ import com.memeki.reviewhome.community.repository.CommunityPostViewHistoryReposi
 import com.memeki.reviewhome.community.repository.CommunityRepository;
 import com.memeki.reviewhome.global.exception.DefaultException;
 import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
+import com.memeki.reviewhome.global.security.lib.CookieUtils;
 import com.memeki.reviewhome.postAddress.entity.PostAddressInfo;
 import com.memeki.reviewhome.postAddress.repository.PostAddressInfoRepository;
+import java.util.Optional;
+import javax.servlet.http.Cookie;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -292,12 +297,14 @@ public class CommunityService {
         return pagination;
     }
 
-    public CommunityPost getCommunityPostById(Long id, Long userId, HttpServletRequest request) {
+    public CommunityPost getCommunityPostById(Long id, Long userId, HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         CommunityPost post = communityPostRepository.findById(id)
                 .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
         List<CommunityPostReply> replies = postReplyRepository.findAllByPostId(id);
         post.setReplies(replies);
         post.setReplyCount(replies.size());
+
         if (userId != null) {
             post.setIsLiked(postLikeHistoryRepository.existsByPostIdAndCreatedBy(id, userId));
             post.setIsMine(post.getCreatedBy() == userId ? true : false);
@@ -310,37 +317,29 @@ public class CommunityService {
         } else {
             post.setIsLiked(false);
             post.setIsMine(false);
-            CommunityPostViewHistory viewHistory = new CommunityPostViewHistory();
-            viewHistory.setPostId(id);
-            viewHistory.setCreatedBy(null);
-            postViewHistoryRepository.save(viewHistory);
+
+            HttpSession session = httpRequest.getSession(false);
+            String guestId = (session != null) ? (String) session.getAttribute("guestId") : null;
+
+            if (guestId != null) {
+                // 세션 ID를 사용하여 조회 기록 확인
+                if (!postViewHistoryRepository.existsByPostIdAndGuestId(id, guestId)) {
+                    CommunityPostViewHistory viewHistory = new CommunityPostViewHistory();
+                    viewHistory.setPostId(id);
+                    viewHistory.setGuestId(guestId);
+                    postViewHistoryRepository.save(viewHistory);
+                }
+            } else {
+                CommunityPostViewHistory viewHistory = new CommunityPostViewHistory();
+                viewHistory.setPostId(id);
+                viewHistory.setGuestId("ERROR");
+                postViewHistoryRepository.save(viewHistory);
+            }
         }
+
         post.setLikeCount(
                 postLikeHistoryRepository.countByPostId(id).intValue());
         communityPostRepository.save(post);
-        String ip = request.getHeader("X-Forwarded-For");
-        System.out.println("> X-FORWARDED-FOR : " + ip);
-
-        if (ip == null) {
-            ip = request.getHeader("Proxy-Client-IP");
-            System.out.println("> Proxy-Client-IP : " + ip);
-        }
-        if (ip == null) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-            System.out.println("> WL-Proxy-Client-IP : " + ip);
-        }
-        if (ip == null) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-            System.out.println("> HTTP_CLIENT_IP : " + ip);
-        }
-        if (ip == null) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-            System.out.println("> HTTP_X_FORWARDED_FOR : " + ip);
-        }
-        if (ip == null) {
-            ip = request.getRemoteAddr();
-            System.out.println("> getRemoteAddr : " + ip);
-        }
 
         post.setViewCount(
                 postViewHistoryRepository.countByPostId(id).intValue());

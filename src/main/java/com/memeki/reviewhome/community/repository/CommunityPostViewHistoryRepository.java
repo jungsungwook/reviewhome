@@ -7,5 +7,5 @@ import com.memeki.reviewhome.community.entity.CommunityPostViewHistory;
 public interface CommunityPostViewHistoryRepository extends JpaRepository<CommunityPostViewHistory, Long> {
     public Long countByPostId(Long postId);
     public Boolean existsByPostIdAndCreatedBy(Long postId, Long createdBy);
-    
+    public Boolean existsByPostIdAndGuestId(Long postId, String guestId);
 }

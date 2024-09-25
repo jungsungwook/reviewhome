@@ -29,6 +29,9 @@ public class CommunityPostViewHistory {
     @Column(name = "post_id")
     private Long postId;
 
+    @Column(name = "guest_id")
+    private String guestId;
+
     @Column(name = "created_by")
     private Long createdBy;
 
