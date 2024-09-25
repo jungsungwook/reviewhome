@@ -24,6 +24,8 @@ import com.memeki.reviewhome.community.dto.CommunityPostSimple;
 import com.memeki.reviewhome.community.dto.CommunityPostsResponse;
 import com.memeki.reviewhome.community.dto.CreatePostReplyRequest;
 import com.memeki.reviewhome.community.dto.CreatePostRequest;
+import com.memeki.reviewhome.community.dto.DeletePostRequest;
+import com.memeki.reviewhome.community.dto.EditPostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.entity.CommunityEnterHistory;
 import com.memeki.reviewhome.community.entity.CommunityPost;
@@ -470,5 +472,26 @@ public class CommunityService {
             postLikeHistoryRepository.save(newHistory);
             response.setLiked(1);
         }
+    }
+
+    public void editCommunityPost(EditPostRequest request) {
+        CommunityPost post = communityPostRepository.findById(request.getPostId())
+                .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
+        if (post.getCreatedBy() != request.getCreatedBy()) {
+            throw new DefaultException(ErrorCode.FORBIDDEN);
+        }
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setPostType(request.getPostType());
+        communityPostRepository.save(post);
+    }
+
+    public void deleteCommunityPost(DeletePostRequest request) {
+        CommunityPost post = communityPostRepository.findById(request.getPostId())
+                .orElseThrow(() -> new DefaultException(ErrorCode.NOT_FOUND));
+        if (post.getCreatedBy() != request.getCreatedBy()) {
+            throw new DefaultException(ErrorCode.FORBIDDEN);
+        }
+        communityPostRepository.delete(post);
     }
 }
