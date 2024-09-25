@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -70,11 +71,12 @@ public class CommunityController {
         @GetMapping("/building/post/detail")
         public ResponseEntity<CommunityPostDetailResponse> getCommunitiyPostDetailById(
                         @RequestParam Long id,
-                        @Parameter(hidden = true) HttpServletRequest request,
+                        @Parameter(hidden = true) HttpServletResponse httpResponse,
+                        @Parameter(hidden = true) HttpServletRequest httpRequest,
                         @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 CommunityPostDetailResponse response = new CommunityPostDetailResponse();
                 response.setCommunityPost(communityService.getCommunityPostById(id,
-                                userDetails != null ? userDetails.getId() : null, request));
+                                userDetails != null ? userDetails.getId() : null, httpRequest, httpResponse));
                 CommunityPostSimple prevPost = communityService.getPrevPost(id);
                 CommunityPostSimple nextPost = communityService.getNextPost(id);
                 response.setPreviousPost(prevPost);
@@ -120,7 +122,7 @@ public class CommunityController {
                         @RequestBody CommunityPostLikeReqeust body,
                         @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 CommunityPostLikeResponse response = new CommunityPostLikeResponse();
-                                body.setCreatedBy(userDetails.getId());
+                body.setCreatedBy(userDetails.getId());
                 communityService.postLike(body, response);
                 response.setStatusCode(200);
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
