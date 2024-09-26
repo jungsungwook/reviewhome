@@ -1,7 +1,8 @@
 package com.memeki.reviewhome.review.controller;
-
+import java.util.Map;
 import java.util.List;
 
+import com.memeki.reviewhome.review.dto.TownReviewCreateDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +21,10 @@ import com.memeki.reviewhome.review.dto.ReviewLikeDto;
 import com.memeki.reviewhome.review.dto.ReviewResponseDto;
 import com.memeki.reviewhome.review.entity.Review;
 import com.memeki.reviewhome.review.service.ReviewService;
+
+import com.memeki.reviewhome.review.dto.TownReviewResponseDto;
+
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -89,4 +94,25 @@ public class ReviewController {
         response.setStatusCode(200);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/town")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TownReviewResponseDto> towncreateReview(
+            @RequestBody TownReviewCreateDto body,
+            @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        if (userDetails == null || reviewService == null) {
+            throw new Exception("사용자 정보를 찾을 수 없습니다.");
+        }
+
+        User user = userService.getUserById(userDetails.getId());
+        if (user == null) {
+            throw new Exception("사용자 정보를 찾을 수 없습니다.");
+        }
+        body.setUserId(user.getId());
+        reviewService.towncreateReview(body);
+        return ResponseEntity.ok().build();
+    }
+
+
+
 }

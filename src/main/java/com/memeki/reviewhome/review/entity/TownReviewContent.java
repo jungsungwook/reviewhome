@@ -1,13 +1,12 @@
-package com.memeki.reviewhome.townreview.entity;
-
-import java.time.LocalDateTime;
-
-import javax.persistence.*;
+package com.memeki.reviewhome.review.entity;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+
+import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "town_review_content")
