@@ -1,7 +1,6 @@
-package com.memeki.reviewhome.townreview.dto;
+package com.memeki.reviewhome.review.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
