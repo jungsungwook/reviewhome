@@ -67,7 +67,7 @@ dependencies {
     implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.8.2'
     
     // HEIC 지원을 위한 의존성
-    implementation 'com.twelvemonkeys.imageio:imageio-heif:3.8.2'
+    implementation 'com.twelvemonkeys.imageio:imageio-heif:3.10.1'
 }
 
 tasks.named('test') {
