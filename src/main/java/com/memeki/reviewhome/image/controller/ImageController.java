@@ -33,7 +33,9 @@ public class ImageController {
     public ResponseEntity<ImageCreateResponse> uploadImage(
             @RequestParam(value = "file", required = true) MultipartFile file,
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws IOException {
-        Image result = imageService.uploadMedia(file, userDetails.getId());
+        System.out.println("file: " + file.getSize());
+        System.out.println("contentType: " + file.getContentType());
+                Image result = imageService.uploadMedia(file, userDetails.getId());
         ImageCreateResponse response = new ImageCreateResponse();
         response.setStatusCode(201);
         response.setImageUrl(result.getUrl());
