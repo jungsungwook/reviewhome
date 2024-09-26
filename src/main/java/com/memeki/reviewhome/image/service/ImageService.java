@@ -45,10 +45,12 @@ public class ImageService {
             String originObjectName = file.getOriginalFilename();
             String contentType = file.getContentType();
 
+            System.out.println("originObjectName: " + originObjectName);
             if (contentType == null || contentType.isEmpty()) {
                 throw new DefaultException(ErrorCode.INVALID_FILE);
             }
 
+            System.out.println("contentType: " + contentType);
             if (!isValidImageFile(contentType, originObjectName)) {
                 throw new DefaultException(ErrorCode.INVALID_FILE);
             }
