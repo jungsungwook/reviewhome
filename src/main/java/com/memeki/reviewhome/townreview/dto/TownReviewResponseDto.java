@@ -1,12 +1,12 @@
-package com.memeki.reviewhome.review.dto;
+package com.memeki.reviewhome.townreview.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.memeki.reviewhome.review.entity.Review;
-import com.memeki.reviewhome.review.entity.TownReviewContent;
+import com.memeki.reviewhome.townreview.entity.TownReview;
+
+import com.memeki.reviewhome.townreview.entity.TownReviewContent;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.List;
 
 @Getter
@@ -15,6 +15,6 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TownReviewResponseDto {
     private int statusCode;
-    private List<Review> townReview;
+    private List<TownReview> townReview;
     private TownReviewContent townReviewContent;
 }

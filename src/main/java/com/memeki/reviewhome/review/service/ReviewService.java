@@ -5,10 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.memeki.reviewhome.review.dto.TownReviewCreateDto;
-import com.memeki.reviewhome.review.entity.TownReviewContent;
-import com.memeki.reviewhome.review.repository.TownReviewContentRepository;
-import com.memeki.reviewhome.review.repository.TownReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +21,6 @@ import com.memeki.reviewhome.review.repository.BuildingReviewContentRepository;
 import com.memeki.reviewhome.review.repository.ReviewLikeHistoryRepository;
 import com.memeki.reviewhome.review.repository.ReviewRepository;
 
-import com.memeki.reviewhome.review.dto.TownReviewResponseDto;
-
-
 @Service
 public class ReviewService {
 
@@ -35,22 +28,13 @@ public class ReviewService {
     private ReviewRepository reviewRepository;
 
     @Autowired
-    private TownReviewRepository townReviewRepository;//town
-
-    @Autowired
     private BuildingReviewContentRepository buildingReviewContentRepository;
 
     @Autowired
     private ReviewLikeHistoryRepository reviewLikeHistoryRepository;
 
-    @Autowired
-    private TownReviewContentRepository townReviewContentRepository;//town
-
-
-
-    public ReviewService(ReviewRepository reviewRepository,TownReviewRepository townReviewRepository) {
+    public ReviewService(ReviewRepository reviewRepository) {
         this.reviewRepository = reviewRepository;
-        this.townReviewRepository = townReviewRepository; //town
     }
 
     public Review getReviewByReviewId(int reviewId) throws Exception {
@@ -84,7 +68,6 @@ public class ReviewService {
             throw new Exception("Review not created");
         }
     }
-
 
     @Transactional
     public int likeReview(int reviewId, long userId) throws Exception {
@@ -165,40 +148,4 @@ public class ReviewService {
             throw new Exception("Review not created");
         }
     }
-
-    //town
-    @Transactional
-    public String towncreateReview(TownReviewCreateDto townReviewCreateDto) {
-        if(townReviewCreateDto.getContent()==null){
-            throw new IllegalArgumentException("공백을 입력하시면 안됩니다.");
-        }
-        if(townReviewCreateDto.getUserId() == null){
-            throw new IllegalArgumentException("userId가 null입니다.");
-        }
-        try {
-            Review townreview = new Review();
-            townreview.setType("town");
-            townreview.setTargetId(townReviewCreateDto.getTargetId());
-            townreview.setCreatedBy(townReviewCreateDto.getUserId());
-//            townreview.setContent(townReviewCreateDto.getContent());
-//            townreview.setTitle(townReviewCreateDto.getTitle());
-            townReviewRepository.save(townreview);
-
-            TownReviewContent townReviewContent = new TownReviewContent();
-            townReviewContent.setReviewId(townreview.getId());
-            townReviewContent.setTitle(townReviewCreateDto.getTitle());
-            townReviewContent.setContent(townReviewCreateDto.getContent());
-            townReviewContent.setReviewType(townReviewCreateDto.getType());
-            townReviewContentRepository.save(townReviewContent);
-
-            return "리뷰 생성에 성공하였습니다.";
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("리뷰등록에 실패하였습니다.");
-        }
-
-    }
-
-
-
 }
