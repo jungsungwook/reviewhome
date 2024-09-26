@@ -33,11 +33,17 @@ public class ImageController {
     public ResponseEntity<ImageCreateResponse> uploadImage(
             @RequestParam(value = "file", required = true) MultipartFile file,
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws IOException {
-        Image result = imageService.uploadImage(file, userDetails.getId());
-        ImageCreateResponse response = new ImageCreateResponse();
-        response.setStatusCode(201);
-        response.setImageUrl(result.getUrl());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        System.out.println("ImageController.uploadImage");
+        try {
+            Image result = imageService.uploadImage(file, userDetails.getId());
+            ImageCreateResponse response = new ImageCreateResponse();
+            response.setStatusCode(201);
+            response.setImageUrl(result.getUrl());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 }
