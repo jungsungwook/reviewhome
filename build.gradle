@@ -62,9 +62,6 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-core'
 	implementation 'org.springframework.session:spring-session-jdbc'
 	implementation 'com.oracle.oci.sdk:oci-java-sdk-objectstorage:2.47.0'
-	// TwelveMonkeys ImageIO 의존성
-    implementation 'com.twelvemonkeys.imageio:imageio-core:3.8.2'
-    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.8.2'
 }
 
 tasks.named('test') {

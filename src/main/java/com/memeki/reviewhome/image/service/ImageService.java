@@ -1,14 +1,10 @@
 package com.memeki.reviewhome.image.service;
 
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-
-import javax.imageio.ImageIO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,8 +17,10 @@ import com.memeki.reviewhome.image.entity.Image;
 import com.memeki.reviewhome.image.repository.ImageRepository;
 import com.oracle.bmc.objectstorage.ObjectStorage;
 import com.oracle.bmc.objectstorage.requests.PutObjectRequest;
-import com.oracle.bmc.objectstorage.responses.PutObjectResponse;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class ImageService {
     @Autowired
@@ -37,36 +35,26 @@ public class ImageService {
     @Value("${oci.namespace}")
     private String namespace;
 
-    private static final List<String> SUPPORTED_IMAGE_TYPES = Arrays.asList(
-            "image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif");
+    private static final List<String> SUPPORTED_MEDIA_TYPES = Arrays.asList(
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "video/mp4", "video/mpeg", "video/quicktime", "video/x-msvideo");
 
-    public Image uploadImage(MultipartFile file, Long userId) throws IOException {
+    public Image uploadMedia(MultipartFile file, Long userId) throws IOException {
         try {
             String originObjectName = file.getOriginalFilename();
             String contentType = file.getContentType();
 
-            System.out.println("originObjectName: " + originObjectName);
-            if (contentType == null || contentType.isEmpty()) {
+            if (contentType == null || contentType.isEmpty() || contentType.equals("application/octet-stream")) {
+                String fileExtension = getFileExtension(originObjectName);
+                contentType = getContentTypeFromExtension(fileExtension);
+            }
+
+            if (!isValidMediaFile(contentType, originObjectName)) {
                 throw new DefaultException(ErrorCode.INVALID_FILE);
             }
 
-            System.out.println("contentType: " + contentType);
-            if (!isValidImageFile(contentType, originObjectName)) {
-                throw new DefaultException(ErrorCode.INVALID_FILE);
-            }
-
-            byte[] imageData;
-            long fileSize;
-
-            if (contentType.equals("image/heic") || contentType.equals("image/heif")) {
-                imageData = convertHeicToJpeg(file);
-                contentType = "image/jpeg";
-                fileSize = imageData.length;
-                originObjectName = originObjectName.replaceFirst("(?i)\\.heic$|\\.heif$", ".jpg");
-            } else {
-                imageData = file.getBytes();
-                fileSize = file.getSize();
-            }
+            byte[] mediaData = file.getBytes();
+            long fileSize = file.getSize();
 
             String uuid = UUID.randomUUID().toString();
             String savedObjectName = uuid + "_" + originObjectName;
@@ -77,54 +65,60 @@ public class ImageService {
                     .objectName(savedObjectName)
                     .contentLength(fileSize)
                     .contentType(contentType)
-                    .putObjectBody(new ByteArrayInputStream(imageData))
+                    .putObjectBody(new ByteArrayInputStream(mediaData))
                     .build();
 
             objectStorageClient.putObject(putObjectRequest);
 
-            Image image = new Image();
-            image.setUuid(uuid);
-            image.setOriginalName(originObjectName);
-            image.setSavedName(savedObjectName);
-            image.setUrl("https://i.duriburn.com/" + savedObjectName);
-            image.setSize(fileSize);
-            image.setExtension(contentType);
-            image.setCreatedBy(userId);
+            Image media = new Image();
+            media.setUuid(uuid);
+            media.setOriginalName(originObjectName);
+            media.setSavedName(savedObjectName);
+            media.setUrl("https://i.duriburn.com/" + savedObjectName);
+            media.setSize(fileSize);
+            media.setExtension(contentType);
+            media.setCreatedBy(userId);
 
-            return imageRepository.save(image);
+            return imageRepository.save(media);
         } catch (DefaultException e) {
-            e.printStackTrace();
             throw e;
         } catch (IOException e) {
-            e.printStackTrace();
             throw new DefaultException(ErrorCode.FILE_PROCESSING_ERROR);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new DefaultException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
-    private boolean isValidImageFile(String contentType, String fileName) {
-        return SUPPORTED_IMAGE_TYPES.contains(contentType) ||
-                fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif|webp|heic|heif)$");
+    private boolean isValidMediaFile(String contentType, String fileName) {
+        return SUPPORTED_MEDIA_TYPES.contains(contentType) ||
+                fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif|webp|heic|heif|mp4|mpeg|mov|avi)$");
     }
 
-    public byte[] convertHeicToJpeg(MultipartFile file) throws IOException {
-        // HEIC 이미지를 읽음
-        BufferedImage image = ImageIO.read(file.getInputStream());
+    private String getFileExtension(String fileName) {
+        return fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+    }
 
-        if (image == null) {
-            throw new IOException("Failed to read HEIC image");
+    private String getContentTypeFromExtension(String extension) {
+        switch (extension) {
+            case "jpg":
+            case "jpeg":
+                return "image/jpeg";
+            case "png":
+                return "image/png";
+            case "gif":
+                return "image/gif";
+            case "webp":
+                return "image/webp";
+            case "mp4":
+                return "video/mp4";
+            case "mpeg":
+                return "video/mpeg";
+            case "mov":
+                return "video/quicktime";
+            case "avi":
+                return "video/x-msvideo";
+            default:
+                return "application/octet-stream";
         }
-
-        // JPEG로 변환
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        boolean success = ImageIO.write(image, "jpg", outputStream);
-
-        if (!success) {
-            throw new IOException("Failed to convert HEIC to JPEG");
-        }
-
-        return outputStream.toByteArray();
     }
 }
