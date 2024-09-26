@@ -43,7 +43,6 @@ public class ImageService {
         try {
             String originObjectName = file.getOriginalFilename();
             String contentType = file.getContentType();
-            System.out.println("contentType: " + contentType);
 
             if (contentType == null || contentType.isEmpty() || contentType.equals("application/octet-stream")) {
                 String fileExtension = getFileExtension(originObjectName);
@@ -59,7 +58,6 @@ public class ImageService {
 
             String uuid = UUID.randomUUID().toString();
             String savedObjectName = uuid + "_" + originObjectName;
-            System.out.println("savedObjectName: " + savedObjectName);
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucketName(bucketName)
