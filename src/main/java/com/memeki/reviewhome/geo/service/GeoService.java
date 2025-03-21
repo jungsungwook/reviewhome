@@ -3,13 +3,16 @@ package com.memeki.reviewhome.geo.service;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.memeki.reviewhome.geo.dto.AddressToPointsResponseDto;
 import com.memeki.reviewhome.geo.dto.VWorldApiResponseDto;
+import com.memeki.reviewhome.geo.entity.GeoLegalDong;
 import com.memeki.reviewhome.geo.entity.GeoLocation;
+import com.memeki.reviewhome.geo.repository.GeoLegalDongRepository;
 import com.memeki.reviewhome.geo.repository.GeoLocationRepository;
 import com.memeki.reviewhome.global.exception.DefaultException;
 import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
@@ -24,6 +27,9 @@ public class GeoService {
     private final WebClient webClient;
 
     private final GeoLocationRepository geoLocationRepository;
+
+    @Autowired
+    private GeoLegalDongRepository geoLegalDongRepository;
 
     public GeoService(WebClient.Builder webClientBuilder, GeoLocationRepository geoLocationRepository) {
         this.webClient = webClientBuilder.baseUrl("https://api.vworld.kr").build();
@@ -70,7 +76,7 @@ public class GeoService {
 
                 // items가 비어있지 않은 경우 동 이름을 검사합니다.
                 for (VWorldApiResponseDto.ItemDTO item : items) {
-                    if(dongNm == null){
+                    if (dongNm == null) {
                         if (item.getAddress().getRoad() != null && item.getAddress().getRoad().contains(address)) {
                             point = item.getPoint();
                             found = true;
@@ -125,6 +131,36 @@ public class GeoService {
             return addressToPointsResponseDto;
         } else {
             throw new DefaultException(ErrorCode.NOT_FOUND);
+        }
+    }
+
+    public GeoLegalDong getBjdong(
+            String bjdongCd,
+            String bjdongNm,
+            Integer bjdongType) {
+        if (bjdongCd == null && bjdongNm == null) {
+            throw new DefaultException(ErrorCode.INVALID_PARAMETER);
+        }
+
+        if (bjdongCd != null) {
+            return geoLegalDongRepository.findByBjdCd(bjdongCd);
+        } else {
+            if (bjdongType == null) {
+                return geoLegalDongRepository.findByLegalDongNm(bjdongNm);
+            } else {
+                switch (bjdongType) {
+                    case 0:
+                        return geoLegalDongRepository.findBySidoNm(bjdongNm);
+                    case 1:
+                        return geoLegalDongRepository.findBySigunguNm(bjdongNm);
+                    case 2:
+                        return geoLegalDongRepository.findByLegalDongNm(bjdongNm);
+                    case 3:
+                        return geoLegalDongRepository.findByLegalLiNm(bjdongNm);
+                    default:
+                        return geoLegalDongRepository.findByBjdCd(bjdongCd);
+                }
+            }
         }
     }
 }

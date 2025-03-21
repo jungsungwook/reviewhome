@@ -140,7 +140,7 @@ public class PostAddressService {
                 GetBrTitleInfoResponseDto result = webClient.get()
                         .uri(
                                 uriBuilder -> uriBuilder
-                                        .path("/1613000/BldRgstService_v2/getBrTitleInfo")
+                                        .path("/1613000/BldRgstHubService/getBrTitleInfo")
                                         .queryParam("sigunguCd", addressInfo.getSigunguCd())
                                         .queryParam("bjdongCd", addressInfo.getBjdongCd())
                                         .queryParam("bun", addressInfo.getBun())
