@@ -35,6 +35,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.6.4'
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'org.locationtech.jts:jts-core:1.18.0'
 	implementation 'org.geotools:gt-main:27.1'
@@ -54,6 +55,13 @@ dependencies {
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.5'
 	// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.5'
+	// https://mvnrepository.com/artifact/io.springfox/springfox-swagger-ui
+	implementation 'io.springfox:springfox-swagger-ui:2.6.1'
+	// https://mvnrepository.com/artifact/io.springfox/springfox-swagger2
+	implementation 'io.springfox:springfox-swagger2:2.6.1'
+	implementation 'org.springframework.session:spring-session-core'
+	implementation 'org.springframework.session:spring-session-jdbc'
+	implementation 'com.oracle.oci.sdk:oci-java-sdk-objectstorage:2.47.0'
 }
 
 tasks.named('test') {

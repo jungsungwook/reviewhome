@@ -7,11 +7,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.memeki.reviewhome.postAddress.utils.ItemOrItemListDeserializer;
 import com.memeki.reviewhome.postAddress.utils.ItemsOrStringDeserializer;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -51,9 +54,9 @@ public class GetBrTitleInfoResponseDto {
 
         @JsonCreator
         public Body(@JsonProperty("items") Item items,
-                    @JsonProperty("numOfRows") int numOfRows,
-                    @JsonProperty("pageNo") int pageNo,
-                    @JsonProperty("totalCount") int totalCount) {
+                @JsonProperty("numOfRows") int numOfRows,
+                @JsonProperty("pageNo") int pageNo,
+                @JsonProperty("totalCount") int totalCount) {
             this.items = items;
             this.numOfRows = numOfRows;
             this.pageNo = pageNo;
@@ -77,7 +80,9 @@ public class GetBrTitleInfoResponseDto {
 
     @Getter
     @Setter
+    @Builder
     @NoArgsConstructor
+    @ToString()
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ItemDto {
         private String mainPurpsCdNm;
@@ -95,24 +100,44 @@ public class GetBrTitleInfoResponseDto {
         private int rideUseElvtCnt;
         private String bldNm;
         private String dongNm;
+        private String bun;
+        private String ji;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            ItemDto itemDto = (ItemDto) o;
+            return Objects.equals(newPlatPlc, itemDto.newPlatPlc) &&
+                    Objects.equals(bldNm, itemDto.bldNm) &&
+                    Objects.equals(dongNm, itemDto.dongNm);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(newPlatPlc, bldNm, dongNm);
+        }
 
         @JsonCreator
         public ItemDto(@JsonProperty("mainPurpsCdNm") String mainPurpsCdNm,
-                    @JsonProperty("hhldCnt") int hhldCnt,
-                    @JsonProperty("grndFlrCnt") int grndFlrCnt,
-                    @JsonProperty("ugrndFlrCnt") int ugrndFlrCnt,
-                    @JsonProperty("indrAutoUtcnt") int indrAutoUtcnt,
-                    @JsonProperty("oudrAutoUtcnt") int oudrAutoUtcnt,
-                    @JsonProperty("indrMechUtcnt") int indrMechUtcnt,
-                    @JsonProperty("oudrMechUtcnt") int oudrMechUtcnt,
-                    @JsonProperty("stcnsDay") String stcnsDay,
-                    @JsonProperty("useAprDay") String useAprDay,
-                    @JsonProperty("newPlatPlc") String newPlatPlc,
-                    @JsonProperty("platPlc") String platPlc,
-                    @JsonProperty("rideUseElvtCnt") int rideUseElvtCnt,
-                    @JsonProperty("bldNm") String bldNm,
-                    @JsonProperty("dongNm") String dongNm
-                    ) {
+                @JsonProperty("hhldCnt") int hhldCnt,
+                @JsonProperty("grndFlrCnt") int grndFlrCnt,
+                @JsonProperty("ugrndFlrCnt") int ugrndFlrCnt,
+                @JsonProperty("indrAutoUtcnt") int indrAutoUtcnt,
+                @JsonProperty("oudrAutoUtcnt") int oudrAutoUtcnt,
+                @JsonProperty("indrMechUtcnt") int indrMechUtcnt,
+                @JsonProperty("oudrMechUtcnt") int oudrMechUtcnt,
+                @JsonProperty("stcnsDay") String stcnsDay,
+                @JsonProperty("useAprDay") String useAprDay,
+                @JsonProperty("newPlatPlc") String newPlatPlc,
+                @JsonProperty("platPlc") String platPlc,
+                @JsonProperty("rideUseElvtCnt") int rideUseElvtCnt,
+                @JsonProperty("bldNm") String bldNm,
+                @JsonProperty("dongNm") String dongNm,
+                @JsonProperty("bun") String bun,
+                @JsonProperty("ji") String ji) {
             this.mainPurpsCdNm = mainPurpsCdNm;
             this.hhldCnt = hhldCnt;
             this.grndFlrCnt = grndFlrCnt;
@@ -128,6 +153,8 @@ public class GetBrTitleInfoResponseDto {
             this.rideUseElvtCnt = rideUseElvtCnt;
             this.bldNm = bldNm;
             this.dongNm = dongNm;
+            this.bun = bun;
+            this.ji = ji;
         }
     }
 }

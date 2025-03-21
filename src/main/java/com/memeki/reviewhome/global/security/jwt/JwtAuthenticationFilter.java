@@ -12,7 +12,10 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import java.io.IOException;
+import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -22,7 +25,7 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-
+        HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
         //1. Request Header 에서 JWT Token 추출
         String token = jwtTokenProvider.resolveToken((HttpServletRequest) servletRequest);
 
@@ -35,6 +38,9 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
         if (token != null && jwtTokenProvider.validateToken(token)) {
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+        else {
+            handleGuestSession(httpRequest);
         }
         filterChain.doFilter(servletRequest, servletResponse);
     }
@@ -49,6 +55,15 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
             }
         }
         return null;
+    }
+
+    private void handleGuestSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(true);
+        if (session.getAttribute("guestId") == null) {
+            String guestId = "GUEST-" + UUID.randomUUID().toString();
+            session.setAttribute("guestId", guestId);
+            log.info("Created guest session with ID: {}", guestId);
+        }
     }
 
 }

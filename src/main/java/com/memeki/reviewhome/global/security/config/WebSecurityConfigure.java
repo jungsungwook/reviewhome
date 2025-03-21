@@ -12,14 +12,12 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -43,18 +41,19 @@ public class WebSecurityConfigure {
                 // httpBasic, csrf, formLogin, rememberMe, logout, session disable
                 http
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                                .httpBasic(AbstractHttpConfigurer::disable)
                                 .csrf(AbstractHttpConfigurer::disable)
-                                .formLogin(form -> form
-                                                .disable()
-                                )
+                                .formLogin(form -> form.disable())
                                 .rememberMe(AbstractHttpConfigurer::disable)
                                 .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .httpBasic(Customizer.withDefaults());
 
                 // 요청에 대한 권한 설정
                 http.authorizeRequests(requests -> requests
-                                .antMatchers("/oauth2/**", "/api/**").permitAll()
+                                .antMatchers("/oauth2/**", "/api/**", "/guest/**").permitAll()
+                                .antMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                                                "/swagger-resources/**", "/webjars/**")
+                                .hasAuthority("ROLE_ADMIN")
                                 .anyRequest().authenticated());
 
                 // oauth2Login
@@ -86,7 +85,8 @@ public class WebSecurityConfigure {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // 클라이언트 도메인을 지정
+                configuration.setAllowedOrigins(Arrays.asList("https://duriburn.com", "https://www.duriburn.com",
+                                "http://localhost:3000")); // 클라이언트 도메인을 지정
                 configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
                 configuration.setExposedHeaders(Arrays.asList("x-auth-token"));

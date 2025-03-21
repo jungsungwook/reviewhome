@@ -28,37 +28,40 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest oAuth2UserRequest) throws OAuth2AuthenticationException {
-        try{
-        OAuth2UserService oAuth2UserService = new DefaultOAuth2UserService();
-        OAuth2User oAuth2User = oAuth2UserService.loadUser(oAuth2UserRequest);
+        try {
+            OAuth2UserService oAuth2UserService = new DefaultOAuth2UserService();
+            OAuth2User oAuth2User = oAuth2UserService.loadUser(oAuth2UserRequest);
 
-        return processOAuth2User(oAuth2UserRequest, oAuth2User);
-        }
-        catch(Exception ex){
+            return processOAuth2User(oAuth2UserRequest, oAuth2User);
+        } catch (Exception ex) {
             throw new InternalAuthenticationServiceException(ex.getMessage(), ex.getCause());
         }
     }
 
-    protected OAuth2User processOAuth2User(OAuth2UserRequest oAuth2UserRequest, OAuth2User oAuth2User) throws OAuth2AuthenticationException {
-        //OAuth2 로그인 플랫폼 구분
-        AuthProvider authProvider = AuthProvider.valueOf(oAuth2UserRequest.getClientRegistration().getRegistrationId().toUpperCase());
-        OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(authProvider, oAuth2User.getAttributes());
+    protected OAuth2User processOAuth2User(OAuth2UserRequest oAuth2UserRequest, OAuth2User oAuth2User)
+            throws OAuth2AuthenticationException {
+        // OAuth2 로그인 플랫폼 구분
+        AuthProvider authProvider = AuthProvider
+                .valueOf(oAuth2UserRequest.getClientRegistration().getRegistrationId().toUpperCase());
+        OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(authProvider,
+                oAuth2User.getAttributes());
 
         if (!StringUtils.hasText(oAuth2UserInfo.getEmail())) {
             throw new RuntimeException("Email not found from OAuth2 provider");
         }
 
         // 이메일과 플랫폼이 일치하는 사용자 찾기
-        // User user = userRepository.findByEmail(oAuth2UserInfo.getEmail()).orElse(null);
+        // User user =
+        // userRepository.findByEmail(oAuth2UserInfo.getEmail()).orElse(null);
         User user = userRepository.findByEmail(oAuth2UserInfo.getEmail()).orElse(null);
-        //이미 가입된 경우
+        // 이미 가입된 경우
         if (user != null) {
             if (!user.getAuthProvider().equals(authProvider)) {
                 throw new RuntimeException("Email already signed up.");
             }
             user = updateUser(user, oAuth2UserInfo);
         }
-        //가입되지 않은 경우
+        // 가입되지 않은 경우
         else {
             user = registerUser(authProvider, oAuth2UserInfo);
         }
@@ -67,18 +70,33 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     }
 
     private User registerUser(AuthProvider authProvider, OAuth2UserInfo oAuth2UserInfo) {
+        // 먼저 이메일로 사용자를 조회합니다.
+        User existingUser = userRepository.findByEmail(oAuth2UserInfo.getEmail()).orElse(null);
+
+        Role userRole = Role.ROLE_USER; // 기본 역할
+
+        // 이미 존재하는 사용자라면 DB에 저장된 역할을 사용합니다.
+        if (existingUser != null) {
+            userRole = existingUser.getRole();
+        }
+
         User user = User.builder()
                 .email(oAuth2UserInfo.getEmail())
                 .name(oAuth2UserInfo.getName())
                 .oauth2Id(oAuth2UserInfo.getOAuth2Id())
                 .authProvider(authProvider)
-                .role(Role.ROLE_USER)
+                .role(userRole)
                 .build();
 
         return userRepository.save(user);
     }
 
     private User updateUser(User user, OAuth2UserInfo oAuth2UserInfo) {
+        // DB에서 최신 사용자 정보를 가져옵니다.
+        User latestUserInfo = userRepository.findById(user.getId()).orElse(user);
+
+        // 최신 역할 정보를 사용합니다.
+        user.setRole(latestUserInfo.getRole());
 
         return userRepository.save(user.update(oAuth2UserInfo));
     }

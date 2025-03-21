@@ -3,7 +3,9 @@ package com.memeki.reviewhome.geo.entity;
 import javax.persistence.*;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import org.geolatte.geom.GeometryType;
 import org.hibernate.annotations.TypeDef;
@@ -17,6 +19,8 @@ import com.memeki.reviewhome.geo.utils.serializer.GeometrySerializer;
 @TypeDef(name = "geometry", typeClass = GeometryType.class)
 @Getter
 @Setter
+@ToString()
+@NoArgsConstructor
 public class GeoFeatures {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
