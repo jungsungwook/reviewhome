@@ -77,7 +77,9 @@ public class GeoService {
                 // items가 비어있지 않은 경우 동 이름을 검사합니다.
                 for (VWorldApiResponseDto.ItemDTO item : items) {
                     if (dongNm == null) {
-                        if (item.getAddress().getRoad() != null && item.getAddress().getRoad().contains(address)) {
+                        String targetA = item.getAddress().getRoad().replaceAll("\\(.*?\\)", "").trim();
+                        String targetB = address.replaceAll("\\(.*?\\)", "").trim();
+                        if (targetA.equals(targetB)) {
                             point = item.getPoint();
                             found = true;
                             break;
