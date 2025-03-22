@@ -111,7 +111,8 @@ public class GeoService {
                 // 다음 페이지로 이동
                 if (!found) {
                     // 만약 다음 페이지가 없으면 반복 종료
-                    if (vworldApiResponseDto.getResponse().getResult().getTotal() <= _page.get() * _size) {
+                    if (Integer.parseInt(vworldApiResponseDto.getResponse().getRecord().getTotal()) <= _page.get()
+                            * _size) {
                         break;
                     }
                     _page.incrementAndGet();
