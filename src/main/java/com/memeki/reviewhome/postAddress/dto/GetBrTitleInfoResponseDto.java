@@ -18,6 +18,7 @@ import java.util.Objects;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GetBrTitleInfoResponseDto {
@@ -32,6 +33,7 @@ public class GetBrTitleInfoResponseDto {
     @Setter
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @ToString
     public static class Response {
         private Body body;
 
@@ -45,6 +47,7 @@ public class GetBrTitleInfoResponseDto {
     @Setter
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @ToString
     public static class Body {
         @JsonDeserialize(using = ItemsOrStringDeserializer.class)
         private Item items;
@@ -68,6 +71,7 @@ public class GetBrTitleInfoResponseDto {
     @Setter
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @ToString
     public static class Item {
         @JsonDeserialize(using = ItemOrItemListDeserializer.class)
         private List<ItemDto> item;

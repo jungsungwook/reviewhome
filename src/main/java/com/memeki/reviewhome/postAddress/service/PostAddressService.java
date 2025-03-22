@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriBuilder;
 
 import com.memeki.reviewhome.geo.dto.AddressToPointsResponseDto;
 import com.memeki.reviewhome.geo.dto.GeoFeaturesByPostAddressInfoDto;
@@ -139,21 +140,27 @@ public class PostAddressService {
             while (!allResultsFetched) {
                 GetBrTitleInfoResponseDto result = webClient.get()
                         .uri(
-                                uriBuilder -> uriBuilder
-                                        .path("/1613000/BldRgstHubService/getBrTitleInfo")
-                                        .queryParam("sigunguCd", addressInfo.getSigunguCd())
-                                        .queryParam("bjdongCd", addressInfo.getBjdongCd())
-                                        .queryParam("bun", addressInfo.getBun())
-                                        .queryParam("ji", addressInfo.getJi())
-                                        .queryParam("numOfRows", numOfRows)
-                                        .queryParam("pageNo", pageNo.get()) // 현재 페이지 번호
-                                        .build())
+                                uriBuilder -> {
+                                    UriBuilder builder = uriBuilder.path("/1613000/BldRgstHubService/getBrTitleInfo")
+                                            .queryParam("sigunguCd", addressInfo.getSigunguCd())
+                                            .queryParam("bjdongCd", addressInfo.getBjdongCd())
+                                            .queryParam("bun", addressInfo.getBun())
+                                            .queryParam("numOfRows", numOfRows)
+                                            .queryParam("pageNo", pageNo.get()); // 현재 페이지 번호
+                        
+                                    // ji가 null이 아닌 경우에만 쿼리 파라미터 추가
+                                    if (addressInfo.getJi() != null) {
+                                        builder.queryParam("ji", addressInfo.getJi());
+                                    }
+                                    return builder.build();
+                                })
                         .retrieve()
                         .bodyToMono(GetBrTitleInfoResponseDto.class)
                         .doOnError(WebClientResponseException.class, ex -> {
                             // 응답값 확인
                             System.out.println("GetBrTitleInfoResponseDto ---> " + ex.getResponseBodyAsString());
                         }).block();
+                System.out.println("GetBrTitleInfoResponseDto ---> " + result.toString());
 
                 if (result == null || result.getResponse() == null || result.getResponse().getBody() == null) {
                     throw new DefaultException(ErrorCode.INTERNAL_SERVER_ERROR);
@@ -283,7 +290,6 @@ public class PostAddressService {
             response.setDongNm(null);
             PostAddress savePostAddress = postAddressRepository.save(postAddress);
             GeoFeaturesByPostAddressInfoDto geoFeatures = geoFeaturesService.getFeatureByPostAddress(savePostAddress);
-            System.out.println(geoFeatures.getId());
             /*
              * 여러개 동이 아닌 경우 해당 주소를 저장하고 좌표를 반환한다.
              */
@@ -300,10 +306,10 @@ public class PostAddressService {
                         !saveItem.getDongNm().isEmpty()) {
                     saveItem.setDongNm(Integer.toString(extractDongNumber(saveItem.getDongNm())));
                 }
-                if(saveItem.getBldNm() != null && !saveItem.getBldNm().isBlank() && !saveItem.getBldNm().isEmpty()) {
+                if (saveItem.getBldNm() != null && !saveItem.getBldNm().isBlank() && !saveItem.getBldNm().isEmpty()) {
                     saveItem.setBldNm(saveItem.getBldNm().trim());
                 }
-                if(saveItem.getBldNm() == null || saveItem.getBldNm().isBlank() || saveItem.getBldNm().isEmpty()) {
+                if (saveItem.getBldNm() == null || saveItem.getBldNm().isBlank() || saveItem.getBldNm().isEmpty()) {
                     saveItem.setBldNm(newPlatPlc);
                 }
                 postAddressInfo.copyFromItemDto(saveItem);
@@ -336,10 +342,12 @@ public class PostAddressService {
                         continue;
                     }
                     allItems.get(i).setDongNm(Integer.toString(dongNum));
-                    if(allItems.get(i).getBldNm() != null && !allItems.get(i).getBldNm().isBlank() && !allItems.get(i).getBldNm().isEmpty()) {
+                    if (allItems.get(i).getBldNm() != null && !allItems.get(i).getBldNm().isBlank()
+                            && !allItems.get(i).getBldNm().isEmpty()) {
                         allItems.get(i).setBldNm(allItems.get(i).getBldNm().trim());
                     }
-                    if(allItems.get(i).getBldNm() == null || allItems.get(i).getBldNm().isBlank() || allItems.get(i).getBldNm().isEmpty()) {
+                    if (allItems.get(i).getBldNm() == null || allItems.get(i).getBldNm().isBlank()
+                            || allItems.get(i).getBldNm().isEmpty()) {
                         allItems.get(i).setBldNm(newPlatPlc);
                     }
                     postAddressInfo.copyFromItemDto(allItems.get(i));
