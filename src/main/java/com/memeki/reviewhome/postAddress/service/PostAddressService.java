@@ -148,7 +148,7 @@ public class PostAddressService {
                                             .queryParam("bjdongCd", addressInfo.getBjdongCd())
                                             .queryParam("bun", addressInfo.getBun())
                                             .queryParam("numOfRows", numOfRows)
-                                            .queryParam("pageNo", pageNo.get()); // 현재 페이지 번호
+                                            .queryParam("pageNo", pageNo.get());
                         
                                     // ji가 null이 아닌 경우에만 쿼리 파라미터 추가
                                     if (addressInfo.getJi() != null) {

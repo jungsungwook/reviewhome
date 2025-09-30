@@ -19,16 +19,13 @@ configurations {
 }
 
 repositories {
+	maven {
+        url "https://maven.geotoolkit.org/"
+    }
 	mavenCentral()
 	maven {
         url "https://repo.osgeo.org/repository/geotools-releases/"
     }
-	maven {
-        url "https://maven.geotoolkit.org/"
-    }
-	maven {
-		url "https://repo1.maven.org/maven2/"
-	}
 }
 
 dependencies {
@@ -41,14 +38,8 @@ dependencies {
 	implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.6.4'
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'org.locationtech.jts:jts-core:1.18.0'
-	implementation('org.geotools:gt-main:27.1') {
-		exclude group: 'javax.media', module: 'jai_core'
-		exclude group: 'javax.media', module: 'jai_codec'
-	}
-    implementation('org.geotools:gt-geojson:27.1') {
-		exclude group: 'javax.media', module: 'jai_core'
-		exclude group: 'javax.media', module: 'jai_codec'
-	}
+	implementation 'org.geotools:gt-main:27.1'
+    implementation 'org.geotools:gt-geojson:27.1'
     implementation 'org.hibernate:hibernate-spatial:5.4.21.Final'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
@@ -56,6 +47,8 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
+	implementation 'javax.media:jai_core:1.1.3'
+    implementation 'javax.media:jai_codec:1.1.3'
 	// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
 	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.11.5'
 	// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl
@@ -73,12 +66,4 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
-}
-
-compileJava {
-	options.encoding = 'UTF-8'
-}
-
-compileTestJava {
-	options.encoding = 'UTF-8'
 }
