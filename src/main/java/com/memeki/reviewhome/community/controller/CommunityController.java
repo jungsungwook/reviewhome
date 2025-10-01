@@ -19,6 +19,8 @@ import com.memeki.reviewhome.community.dto.EditPostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.service.CommunityService;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
+import com.memeki.reviewhome.global.exception.DefaultException;
+import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Parameter;
 
@@ -200,6 +202,88 @@ public class CommunityController {
         @PostMapping("/building/leave")
         @PreAuthorize("isAuthenticated()")
         public ResponseEntity<CommunityResponse> leaveCommunity(
+                        @RequestBody CommunityLeaveRequest body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                CommunityResponse response = new CommunityResponse();
+                body.setUserId(userDetails.getId());
+                communityService.leaveCommunity(body);
+                response.setStatusCode(200);
+                return ResponseEntity.ok(response);
+        }
+
+        // ==================== 동네 커뮤니티 API ====================
+
+        @GetMapping("/town")
+        public ResponseEntity<CommunityDefaultResponse> getTownCommunity(
+                        @RequestParam(required = false) String emdCd,
+                        @RequestParam(required = false) String uuid,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+                CommunityDefaultResponse response = new CommunityDefaultResponse();
+                
+                String communityUuid;
+                if (uuid != null && !uuid.isEmpty()) {
+                        // UUID로 직접 조회
+                        communityUuid = uuid;
+                } else if (emdCd != null && !emdCd.isEmpty()) {
+                        // emdCd로 조회 또는 생성
+                        Community community = communityService.getTownCommunity(emdCd, "default",
+                                        userDetails != null ? userDetails.getId() : null);
+                        communityUuid = community.getUuid();
+                } else {
+                        throw new DefaultException(ErrorCode.INVALID_PARAMETER);
+                }
+                
+                response.setCommunity(
+                                communityService.getCommunityByCommunityUuid(communityUuid,
+                                                userDetails != null ? userDetails.getId() : null));
+                try {
+                        Pageable pageable = PageRequest.of(0, 5);
+                        response.setPopularPosts(
+                                        communityService.getPopularPosts(communityUuid, pageable,
+                                                        userDetails != null ? userDetails.getId() : null));
+                        response.setRecentPosts(
+                                        communityService.getCommunityPosts(communityUuid, pageable,
+                                                        userDetails != null ? userDetails.getId() : null));
+                        response.setStatusCode(200);
+                } catch (Exception e) {
+                        response.setStatusCode(207);
+                        return ResponseEntity.ok(response);
+                }
+                return ResponseEntity.ok(response);
+        }
+
+        @GetMapping("/town/find")
+        public ResponseEntity<CommunityResponse> getDefaultTownCommunity(
+                        @RequestParam String emdCd,
+                        @RequestParam(required = false) String type2,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+                CommunityResponse response = new CommunityResponse();
+                if (type2 == null) {
+                        type2 = "default";
+                }
+                response.setCommunity(
+                                communityService.getTownCommunity(emdCd, type2,
+                                                userDetails != null ? userDetails.getId() : null));
+                response.setStatusCode(200);
+                return ResponseEntity.ok(response);
+        }
+
+        @PostMapping("/town/enter")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<CommunityResponse> enterTownCommunity(
+                        @RequestBody CommunityEnterRequest body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                CommunityResponse response = new CommunityResponse();
+                body.setUserId(userDetails.getId());
+                Community community = communityService.enterCommunity(body);
+                response.setCommunity(community);
+                response.setStatusCode(200);
+                return ResponseEntity.ok(response);
+        }
+
+        @PostMapping("/town/leave")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<CommunityResponse> leaveTownCommunity(
                         @RequestBody CommunityLeaveRequest body,
                         @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
                 CommunityResponse response = new CommunityResponse();
