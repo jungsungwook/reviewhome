@@ -12,4 +12,5 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     Review findReviewByTypeAndTargetId(String type, String targetId);
 
     List<Review> findAllByTypeAndTargetId(String type, String targetId);
+    List<Review> findByCreatedByOrderByCreatedAtDesc(long createdBy);
 }

@@ -19,4 +19,5 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
     CommunityPost findTop1ByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(String communityUuid, LocalDateTime createdAt);
     Page<CommunityPost> findAllByCommunityUuidAndCreatedAtBeforeOrderByCreatedAtDesc(String communityUuid, LocalDateTime createdAt, Pageable pageable);
     Page<CommunityPost> findAllByCommunityUuidAndCreatedAtAfterOrderByCreatedAtAsc(String communityUuid, LocalDateTime createdAt, Pageable pageable);
+    List<CommunityPost> findByCreatedByOrderByCreatedAtDesc(long createdBy);
 }
