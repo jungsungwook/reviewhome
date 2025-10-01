@@ -40,14 +40,12 @@ import com.memeki.reviewhome.community.repository.CommunityPostViewHistoryReposi
 import com.memeki.reviewhome.community.repository.CommunityRepository;
 import com.memeki.reviewhome.global.exception.DefaultException;
 import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
-import com.memeki.reviewhome.global.security.lib.CookieUtils;
 import com.memeki.reviewhome.postAddress.entity.PostAddressInfo;
 import com.memeki.reviewhome.postAddress.repository.PostAddressInfoRepository;
-import java.util.Optional;
-import javax.servlet.http.Cookie;
+import com.memeki.reviewhome.geo.dto.GeoFeaturesByPostAddressInfoDto;
+import com.memeki.reviewhome.geo.repository.GeoFeaturesRepositoryCustom;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 @Service
 public class CommunityService {
@@ -72,6 +70,9 @@ public class CommunityService {
 
     @Autowired
     private CommunityPostViewHistoryRepository postViewHistoryRepository;
+
+    @Autowired
+    private GeoFeaturesRepositoryCustom geoFeaturesRepositoryCustom;
 
     public CommunityService(
             PostAddressInfoRepository postAddressInfoRepository,
@@ -493,5 +494,39 @@ public class CommunityService {
             throw new DefaultException(ErrorCode.FORBIDDEN);
         }
         communityPostRepository.delete(post);
+    }
+
+    /**
+     * 동네 커뮤니티 조회 또는 생성
+     * emdCd(읍면동 코드)를 기준으로 동네 커뮤니티를 찾거나 없으면 새로 생성
+     */
+    public Community getTownCommunity(String emdCd, String type2, Long userId) throws Exception {
+        List<Community> community = communityRepository.findAllByTypeAndTargetIdAndType2(
+                "town", emdCd, type2);
+        
+        if (community.isEmpty() && type2.equals("default")) {
+            // GeoFeatures에서 동네 정보 조회 (DTO 사용)
+            GeoFeaturesByPostAddressInfoDto geoFeaturesDto = geoFeaturesRepositoryCustom.findByEmdCd(emdCd);
+            if (geoFeaturesDto == null) {
+                throw new DefaultException(ErrorCode.NOT_FOUND);
+            }
+            
+            // 새로운 동네 커뮤니티 생성
+            Community newCommunity = new Community();
+            newCommunity.setGeoFeaturesId(geoFeaturesDto.getId());
+            newCommunity.setGeoFeaturesName(geoFeaturesDto.getEmdKorNm());
+            newCommunity.setTargetId(emdCd);
+            newCommunity.setType("town");
+            newCommunity.setType2("default");
+            newCommunity.setCreatedBy(0);
+            newCommunity.setName(geoFeaturesDto.getEmdKorNm() + " 동네 커뮤니티");
+            newCommunity.setDescription(geoFeaturesDto.getEmdKorNm() + " 지역 주민들의 커뮤니티입니다.");
+            newCommunity.setIsPassword(false);
+            
+            communityRepository.save(newCommunity);
+            return newCommunity;
+        }
+        
+        return community.get(0);
     }
 }

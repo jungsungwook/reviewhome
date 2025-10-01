@@ -208,4 +208,75 @@ public class CommunityController {
                 response.setStatusCode(200);
                 return ResponseEntity.ok(response);
         }
+
+        // ==================== 동네 커뮤니티 API ====================
+
+        @GetMapping("/town")
+        public ResponseEntity<CommunityDefaultResponse> getTownCommunity(
+                        @RequestParam String emdCd,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+                CommunityDefaultResponse response = new CommunityDefaultResponse();
+                response.setCommunity(
+                                communityService.getCommunityByCommunityUuid(
+                                                communityService.getTownCommunity(emdCd, "default",
+                                                                userDetails != null ? userDetails.getId() : null)
+                                                                .getUuid(),
+                                                userDetails != null ? userDetails.getId() : null));
+                try {
+                        Pageable pageable = PageRequest.of(0, 5);
+                        String uuid = response.getCommunity().getUuid();
+                        response.setPopularPosts(
+                                        communityService.getPopularPosts(uuid, pageable,
+                                                        userDetails != null ? userDetails.getId() : null));
+                        response.setRecentPosts(
+                                        communityService.getCommunityPosts(uuid, pageable,
+                                                        userDetails != null ? userDetails.getId() : null));
+                        response.setStatusCode(200);
+                } catch (Exception e) {
+                        response.setStatusCode(207);
+                        return ResponseEntity.ok(response);
+                }
+                return ResponseEntity.ok(response);
+        }
+
+        @GetMapping("/town/find")
+        public ResponseEntity<CommunityResponse> getDefaultTownCommunity(
+                        @RequestParam String emdCd,
+                        @RequestParam(required = false) String type2,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+                CommunityResponse response = new CommunityResponse();
+                if (type2 == null) {
+                        type2 = "default";
+                }
+                response.setCommunity(
+                                communityService.getTownCommunity(emdCd, type2,
+                                                userDetails != null ? userDetails.getId() : null));
+                response.setStatusCode(200);
+                return ResponseEntity.ok(response);
+        }
+
+        @PostMapping("/town/enter")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<CommunityResponse> enterTownCommunity(
+                        @RequestBody CommunityEnterRequest body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                CommunityResponse response = new CommunityResponse();
+                body.setUserId(userDetails.getId());
+                Community community = communityService.enterCommunity(body);
+                response.setCommunity(community);
+                response.setStatusCode(200);
+                return ResponseEntity.ok(response);
+        }
+
+        @PostMapping("/town/leave")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<CommunityResponse> leaveTownCommunity(
+                        @RequestBody CommunityLeaveRequest body,
+                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) {
+                CommunityResponse response = new CommunityResponse();
+                body.setUserId(userDetails.getId());
+                communityService.leaveCommunity(body);
+                response.setStatusCode(200);
+                return ResponseEntity.ok(response);
+        }
 }
