@@ -14,17 +14,28 @@
 
 ### API 정보
 - **URL**: `GET /api/community/town`
-- **설명**: 읍면동 코드로 동네 커뮤니티를 조회합니다. 커뮤니티가 없으면 자동으로 생성됩니다.
+- **설명**: 읍면동 코드 또는 UUID로 동네 커뮤니티를 조회합니다. emdCd로 조회 시 커뮤니티가 없으면 자동으로 생성됩니다.
 - **인증**: 선택 (비로그인 시에도 조회 가능, 단 가입 여부는 확인 불가)
 
 ### 요청 파라미터
 | 파라미터 | 타입 | 필수 | 설명 | 예시 |
 |---------|------|------|------|------|
-| emdCd | String | O | 읍면동 코드 (법정동 코드) | "1111010100" |
+| emdCd | String | X | 읍면동 코드 (법정동 코드) | "1111010100" |
+| uuid | String | X | 커뮤니티 UUID | "a1b2c3d4e5f6" |
+
+**주의**: `emdCd` 또는 `uuid` 중 하나는 반드시 필요합니다. 둘 다 있으면 `uuid`를 우선 사용합니다.
 
 ### 요청 예시
+
+#### emdCd로 조회 (최초 생성)
 ```http
 GET /api/community/town?emdCd=1111010100
+Authorization: Bearer {JWT_TOKEN}  # 선택사항
+```
+
+#### UUID로 조회 (이미 생성된 커뮤니티)
+```http
+GET /api/community/town?uuid=a1b2c3d4e5f6
 Authorization: Bearer {JWT_TOKEN}  # 선택사항
 ```
 
@@ -360,7 +371,8 @@ Authorization: Bearer {JWT_TOKEN}
 
 ### 1. 동네 커뮤니티 조회 (자동 생성 포함)
 ```javascript
-async function getTownCommunity(emdCd) {
+// emdCd로 조회 (없으면 자동 생성)
+async function getTownCommunityByEmdCd(emdCd) {
   try {
     const response = await fetch(`http://localhost:8080/api/community/town?emdCd=${emdCd}`, {
       method: 'GET',
@@ -383,8 +395,34 @@ async function getTownCommunity(emdCd) {
   }
 }
 
+// UUID로 조회 (이미 생성된 커뮤니티)
+async function getTownCommunityByUuid(uuid) {
+  try {
+    const response = await fetch(`http://localhost:8080/api/community/town?uuid=${uuid}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('동네 커뮤니티:', data);
+    return data;
+  } catch (error) {
+    console.error('동네 커뮤니티 조회 실패:', error);
+    throw error;
+  }
+}
+
 // 사용 예시
-const communityData = await getTownCommunity('1111010100');
+const communityData = await getTownCommunityByEmdCd('1111010100');
+// 또는
+const communityData = await getTownCommunityByUuid('a1b2c3d4e5f6');
 ```
 
 ### 2. 동네 커뮤니티 가입
@@ -619,20 +657,35 @@ function TownCommunityPage({ emdCd }) {
     const fetchCommunity = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `http://localhost:8080/api/community/town?emdCd=${emdCd}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-              'Content-Type': 'application/json'
-            }
+        
+        // 로컬스토리지에서 저장된 UUID 확인
+        const storedUuid = localStorage.getItem(`town_community_${emdCd}`);
+        
+        let url;
+        if (storedUuid) {
+          // UUID로 빠르게 조회
+          url = `http://localhost:8080/api/community/town?uuid=${storedUuid}`;
+        } else {
+          // emdCd로 조회 (없으면 생성)
+          url = `http://localhost:8080/api/community/town?emdCd=${emdCd}`;
+        }
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
           }
-        );
+        });
         
         const data = await response.json();
         setCommunity(data.community);
         setPopularPosts(data.popularPosts || []);
         setRecentPosts(data.recentPosts || []);
+        
+        // UUID를 로컬스토리지에 저장 (다음 방문 시 사용)
+        if (data.community?.uuid) {
+          localStorage.setItem(`town_community_${emdCd}`, data.community.uuid);
+        }
       } catch (error) {
         console.error('커뮤니티 조회 실패:', error);
       } finally {
@@ -802,14 +855,28 @@ function JoinCommunityModal({ communityUuid, onSuccess }) {
 ## 주요 워크플로우
 
 ### 1️⃣ 동네 커뮤니티 입장 플로우
+
+#### 최초 방문 (emdCd로 조회)
 ```
 1. 사용자 위치 확인 → emdCd 획득
 2. GET /api/community/town?emdCd={emdCd}
 3. 커뮤니티 조회/생성 → communityUuid 획득
-4. isEnter 확인
+4. communityUuid를 로컬스토리지에 저장 (재방문 시 사용)
+5. isEnter 확인
    - false: 가입 필요 → POST /api/community/town/enter
    - true: 바로 입장
-5. 게시글 목록 표시
+6. 게시글 목록 표시
+```
+
+#### 재방문 (UUID로 조회)
+```
+1. 로컬스토리지에서 communityUuid 확인
+2. GET /api/community/town?uuid={communityUuid}
+3. 바로 커뮤니티 입장
+4. 게시글 목록 표시
+```
+
+**추천 방식**: 최초에는 emdCd로 조회하여 communityUuid를 얻고, 이후에는 UUID를 저장해두고 재사용하면 더 빠르게 조회할 수 있습니다.
 ```
 
 ### 2️⃣ 게시글 작성 플로우

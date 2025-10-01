@@ -19,6 +19,8 @@ import com.memeki.reviewhome.community.dto.EditPostRequest;
 import com.memeki.reviewhome.community.entity.Community;
 import com.memeki.reviewhome.community.service.CommunityService;
 import com.memeki.reviewhome.global.security.oauth2.UserPrincipal;
+import com.memeki.reviewhome.global.exception.DefaultException;
+import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Parameter;
 
@@ -213,23 +215,34 @@ public class CommunityController {
 
         @GetMapping("/town")
         public ResponseEntity<CommunityDefaultResponse> getTownCommunity(
-                        @RequestParam String emdCd,
+                        @RequestParam(required = false) String emdCd,
+                        @RequestParam(required = false) String uuid,
                         @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
                 CommunityDefaultResponse response = new CommunityDefaultResponse();
+                
+                String communityUuid;
+                if (uuid != null && !uuid.isEmpty()) {
+                        // UUID로 직접 조회
+                        communityUuid = uuid;
+                } else if (emdCd != null && !emdCd.isEmpty()) {
+                        // emdCd로 조회 또는 생성
+                        Community community = communityService.getTownCommunity(emdCd, "default",
+                                        userDetails != null ? userDetails.getId() : null);
+                        communityUuid = community.getUuid();
+                } else {
+                        throw new DefaultException(ErrorCode.INVALID_PARAMETER);
+                }
+                
                 response.setCommunity(
-                                communityService.getCommunityByCommunityUuid(
-                                                communityService.getTownCommunity(emdCd, "default",
-                                                                userDetails != null ? userDetails.getId() : null)
-                                                                .getUuid(),
+                                communityService.getCommunityByCommunityUuid(communityUuid,
                                                 userDetails != null ? userDetails.getId() : null));
                 try {
                         Pageable pageable = PageRequest.of(0, 5);
-                        String uuid = response.getCommunity().getUuid();
                         response.setPopularPosts(
-                                        communityService.getPopularPosts(uuid, pageable,
+                                        communityService.getPopularPosts(communityUuid, pageable,
                                                         userDetails != null ? userDetails.getId() : null));
                         response.setRecentPosts(
-                                        communityService.getCommunityPosts(uuid, pageable,
+                                        communityService.getCommunityPosts(communityUuid, pageable,
                                                         userDetails != null ? userDetails.getId() : null));
                         response.setStatusCode(200);
                 } catch (Exception e) {
