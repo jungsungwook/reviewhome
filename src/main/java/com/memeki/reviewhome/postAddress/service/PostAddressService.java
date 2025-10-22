@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -26,6 +27,7 @@ import com.memeki.reviewhome.postAddress.dto.GetBrTitleInfoResponseDto;
 import com.memeki.reviewhome.postAddress.dto.GetBrTitleInfoResponseDto.ItemDto;
 import com.memeki.reviewhome.postAddress.dto.SearchAddressDto;
 import com.memeki.reviewhome.postAddress.dto.SearchAddressDto.GetResponse;
+import com.memeki.reviewhome.postAddress.dto.SeoulBuildingResponseDto;
 import com.memeki.reviewhome.postAddress.entity.PostAddress;
 import com.memeki.reviewhome.postAddress.entity.PostAddressInfo;
 import com.memeki.reviewhome.postAddress.repository.PostAddressInfoRepository;
@@ -53,6 +55,12 @@ public class PostAddressService {
 
     @Autowired
     private CommercialService commercialService;
+
+    @Value("${is-open-api-temp}")
+    private boolean isOpenApiTemp;
+
+    @Value("${temp-open-api-key}")
+    private String tempOpenApiKey;
 
     private final PostAddressRepository postAddressRepository;
     private final PostAddressInfoRepository postAddressInfoRepository;
@@ -82,7 +90,12 @@ public class PostAddressService {
                 addressInfo.getBun(),
                 addressInfo.getJi());
         if (postAddress == null) {
-            return searchAddress(addressInfo);
+            // is-open-api-temp 값에 따라 서울시 API 또는 기존 API 사용
+            if (isOpenApiTemp && addressInfo.getSigunguCd().startsWith("11")) {
+                return searchAddressFromSeoul(addressInfo);
+            } else {
+                return searchAddress(addressInfo);
+            }
         }
         if (postAddress.isMultiple()) {
             if (addressInfo.getDongNm() == null) {
@@ -424,6 +437,266 @@ public class PostAddressService {
      * 상권 정보를 비동기로 저장하는 메소드
      * 좌표 정보를 가져와서 상권 API를 호출하여 상권 정보를 저장합니다.
      */
+    /**
+     * 서울시 임시 API를 통해 건물 정보를 가져오는 서비스 로직
+     * 데이터센터 화재로 인한 기존 API 장애 시 사용
+     * 
+     * @param addressInfo
+     * @throws Exception
+     */
+    public SearchAddressDto.PostResponse searchAddressFromSeoul(SearchAddressDto.Request addressInfo) throws Exception {
+        try {
+            SearchAddressDto.PostResponse response = new SearchAddressDto.PostResponse();
+            List<GetBrTitleInfoResponseDto.ItemDto> allItems = new ArrayList<>();
+            List<String> dongNmList = new ArrayList<>();
+            
+            // 서울시 API는 시군구코드가 11로 시작하는 경우만 처리
+            if (!addressInfo.getSigunguCd().startsWith("11")) {
+                throw new DefaultException(ErrorCode.NOT_FOUND);
+            }
+            
+            // 서울시 API 호출 (WebClient 없이 직접 URL 생성)
+            String apiUrl = String.format(
+                "http://openapi.seoul.go.kr:8088/%s/json/vBigDjrTitle/1/1000",
+                tempOpenApiKey
+            );
+            
+            WebClient seoulWebClient = WebClient.builder()
+                    .baseUrl(apiUrl)
+                    .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB로 증가
+                    .build();
+            
+            SeoulBuildingResponseDto result = seoulWebClient.get()
+                    .retrieve()
+                    .bodyToMono(SeoulBuildingResponseDto.class)
+                    .doOnError(WebClientResponseException.class, ex -> {
+                        System.out.println("SeoulBuildingResponseDto Error ---> " + ex.getResponseBodyAsString());
+                    })
+                    .block();
+            
+            System.out.println("=== 서울시 API 응답 시작 ===");
+            System.out.println("요청 정보: sigunguCd=" + addressInfo.getSigunguCd() + 
+                             ", bjdongCd=" + addressInfo.getBjdongCd() + 
+                             ", bun=" + addressInfo.getBun() + 
+                             ", ji=" + addressInfo.getJi());
+            
+            if (result == null || result.getVBigDjrTitle() == null || 
+                result.getVBigDjrTitle().getRow() == null || 
+                result.getVBigDjrTitle().getRow().isEmpty()) {
+                System.out.println("서울시 API 응답 없음 또는 비어있음");
+                throw new DefaultException(ErrorCode.NOT_FOUND);
+            }
+            
+            System.out.println("전체 데이터 수: " + result.getVBigDjrTitle().getListTotalCount());
+            System.out.println("받은 Row 수: " + result.getVBigDjrTitle().getRow().size());
+            
+            // 서울시 API 응답을 기존 ItemDto 형식으로 변환하면서 필터링
+            List<SeoulBuildingResponseDto.Row> rows = result.getVBigDjrTitle().getRow();
+            
+            int matchCount = 0;
+            for (SeoulBuildingResponseDto.Row row : rows) {
+                // 서울시 API의 PLAT_PLC(대지위치)에서 시군구와 법정동 확인
+                String platPlc = row.getPlatPlc();
+                if (platPlc == null || platPlc.isEmpty()) {
+                    continue;
+                }
+                
+                // 주소 필터링: 주지번과 부지번이 일치하는지 확인
+                String mnLotno = row.getMnLotno();
+                String subLotno = row.getSubLotno();
+                
+                // 앞에 0을 제거하여 비교
+                if (mnLotno != null) {
+                    mnLotno = mnLotno.replaceFirst("^0+(?!$)", "");
+                }
+                if (subLotno != null) {
+                    subLotno = subLotno.replaceFirst("^0+(?!$)", "");
+                }
+                
+                String requestBun = addressInfo.getBun();
+                String requestJi = addressInfo.getJi();
+                if (requestBun != null) {
+                    requestBun = requestBun.replaceFirst("^0+(?!$)", "");
+                }
+                if (requestJi != null) {
+                    requestJi = requestJi.replaceFirst("^0+(?!$)", "");
+                }
+                
+                // 주지번 매칭
+                boolean bunMatch = (requestBun != null && mnLotno != null && requestBun.equals(mnLotno));
+                
+                // 부지번 매칭 (부지번이 없거나 0000인 경우 무시)
+                boolean jiMatch = true;
+                if (requestJi != null && !requestJi.isEmpty() && !requestJi.equals("0") && !requestJi.equals("0000")) {
+                    if (subLotno != null && !subLotno.isEmpty() && !subLotno.equals("0") && !subLotno.equals("0000")) {
+                        jiMatch = requestJi.equals(subLotno);
+                    }
+                }
+                
+                // 매칭 로그
+                if (matchCount < 3) { // 처음 3개만 로그 출력
+                    System.out.println("Row 검사: platPlc=" + platPlc + 
+                                     ", mnLotno(원본)=" + row.getMnLotno() + "→" + mnLotno + 
+                                     ", subLotno(원본)=" + row.getSubLotno() + "→" + subLotno + 
+                                     ", bunMatch=" + bunMatch + ", jiMatch=" + jiMatch);
+                }
+                
+                if (!bunMatch || !jiMatch) {
+                    continue; // 주소가 일치하지 않으면 스킵
+                }
+                
+                matchCount++;
+                
+                // ItemDto로 변환
+                GetBrTitleInfoResponseDto.ItemDto item = row.toItemDto();
+                
+                // 동 이름 처리
+                if (item.getDongNm() != null && !item.getDongNm().isBlank() && !item.getDongNm().isEmpty()) {
+                    int dongNum = extractDongNumber(item.getDongNm());
+                    if (dongNum >= 100) {
+                        dongNmList.add(Integer.toString(dongNum));
+                        item.setDongNm(Integer.toString(dongNum));
+                        allItems.add(item);
+                    }
+                } else {
+                    // 동명이 없는 경우에도 추가
+                    allItems.add(item);
+                }
+            }
+            
+            System.out.println("필터링 완료: 매칭된 건물 수=" + matchCount + ", 최종 아이템 수=" + allItems.size());
+            System.out.println("=== 서울시 API 응답 종료 ===");
+            
+            if (allItems.isEmpty()) {
+                System.out.println("매칭된 건물이 없어 NOT_FOUND 예외 발생");
+                throw new DefaultException(ErrorCode.NOT_FOUND);
+            }
+            
+            // 중복 제거
+            Set<ItemDto> uniqueItems = new HashSet<>(allItems);
+            allItems = new ArrayList<>(uniqueItems);
+            
+            // PostAddress 저장
+            PostAddress postAddress = new PostAddress();
+            postAddress.setSigunguCd(addressInfo.getSigunguCd());
+            postAddress.setBjdongCd(addressInfo.getBjdongCd());
+            postAddress.setBun(addressInfo.getBun());
+            postAddress.setJi(addressInfo.getJi());
+            postAddress.setMultiple(dongNmList.size() > 1);
+            
+            // 이하 로직은 기존 searchAddress와 동일하게 처리
+            // (DB 저장 로직은 기존 메소드와 동일하므로 공통 메소드로 추출하는 것이 좋지만,
+            // 여기서는 임시 대응이므로 기존 로직을 그대로 사용)
+            
+            String newPlatPlc = "";
+            int sameCount = 0;
+            for (int i = 0; i < allItems.size(); i++) {
+                if (allItems.get(i).getNewPlatPlc() != null && !allItems.get(i).getNewPlatPlc().isBlank()
+                        && !allItems.get(i).getNewPlatPlc().isEmpty()) {
+                    String target = allItems.get(i).getNewPlatPlc().trim();
+                    if (target.equals(addressInfo.getNewPlatPlc())) {
+                        newPlatPlc = allItems.get(i).getNewPlatPlc();
+                        sameCount++;
+                    }
+                }
+            }
+            if (sameCount == 0 && allItems.size() != 0) {
+                newPlatPlc = allItems.get(0).getNewPlatPlc();
+            }
+
+            postAddress.setNewPlatPlc(newPlatPlc);
+            PostAddress savePostAddress = postAddressRepository.save(postAddress);
+            GeoFeaturesByPostAddressInfoDto geoFeatures = geoFeaturesService.getFeatureByPostAddress(savePostAddress);
+
+            // PostAddressInfo 저장
+            for (int i = 0; i < allItems.size(); i++) {
+                PostAddressInfo postAddressInfo = new PostAddressInfo();
+                postAddressInfo.setPostAddressId(savePostAddress.getId());
+                postAddressInfo.setGeoFeaturesId(geoFeatures.getId());
+                postAddressInfo.setGeoFeaturesName(geoFeatures.getEmdKorNm());
+                postAddressInfo.setMainPurpsCdNm(allItems.get(i).getMainPurpsCdNm());
+                postAddressInfo.setHhldCnt(allItems.get(i).getHhldCnt());
+                postAddressInfo.setGrndFlrCnt(allItems.get(i).getGrndFlrCnt());
+                postAddressInfo.setUgrndFlrCnt(allItems.get(i).getUgrndFlrCnt());
+                postAddressInfo.setIndrAutoUtcnt(allItems.get(i).getIndrAutoUtcnt());
+                postAddressInfo.setOudrAutoUtcnt(allItems.get(i).getOudrAutoUtcnt());
+                postAddressInfo.setIndrMechUtcnt(allItems.get(i).getIndrMechUtcnt());
+                postAddressInfo.setOudrMechUtcnt(allItems.get(i).getOudrMechUtcnt());
+                postAddressInfo.setStcnsDay(allItems.get(i).getStcnsDay());
+                postAddressInfo.setUseAprDay(allItems.get(i).getUseAprDay());
+                postAddressInfo.setNewPlatPlc(allItems.get(i).getNewPlatPlc());
+                postAddressInfo.setPlatPlc(allItems.get(i).getPlatPlc());
+                postAddressInfo.setRideUseElvtCnt(allItems.get(i).getRideUseElvtCnt());
+                postAddressInfo.setBldNm(allItems.get(i).getBldNm());
+                postAddressInfo.setDongNm(allItems.get(i).getDongNm());
+
+                PostAddressInfo savePostAddressInfo = postAddressInfoRepository.save(postAddressInfo);
+
+                // 좌표 저장
+                try {
+                    String dongNm = allItems.get(i).getDongNm();
+                    System.out.println("좌표 저장 시도: newPlatPlc=" + newPlatPlc + 
+                                     ", uuid=" + savePostAddressInfo.getUuid() + 
+                                     ", dongNm=" + dongNm);
+                    
+                    AddressToPointsResponseDto point = geoService.addressToPoints(
+                            newPlatPlc,
+                            savePostAddressInfo.getUuid(),
+                            savePostAddress.getId(),
+                            (dongNm != null && !dongNm.isEmpty()) ? dongNm : null);
+                    
+                    System.out.println("좌표 저장 결과: statusCode=" + 
+                                     (point != null ? point.getStatusCode() : "null"));
+                    
+                    if (point != null && point.getStatusCode() == 200) {
+                        // 상권 정보 저장 (비동기)
+                        saveCommercialInfoAsync(savePostAddressInfo.getUuid());
+                    }
+                } catch (Exception e) {
+                    System.err.println("좌표 저장 중 오류 발생: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            if (savePostAddress.isMultiple()) {
+                if (addressInfo.getDongNm() == null) {
+                    Collections.sort(dongNmList, new Comparator<String>() {
+                        @Override
+                        public int compare(String s1, String s2) {
+                            int number1 = extractDongNumber(s1);
+                            int number2 = extractDongNumber(s2);
+                            return Integer.compare(number1, number2);
+                        }
+                    });
+                    response.setDongNm(dongNmList);
+                    response.setStatusCode(400);
+                    return response;
+                } else {
+                    PostAddressInfo postAddressInfo = postAddressInfoRepository
+                            .findPostAddressInfoByDongNmAndPostAddressId(
+                                    addressInfo.getDongNm(),
+                                    savePostAddress.getId());
+                    response.setStatusCode(200);
+                    response.setUuid(postAddressInfo.getUuid());
+                    return response;
+                }
+            }
+
+            PostAddressInfo postAddressInfo = postAddressInfoRepository
+                    .findPostAddressInfoByPostAddressId(savePostAddress.getId());
+            response.setUuid(postAddressInfo.getUuid());
+            response.setStatusCode(200);
+            return response;
+
+        } catch (DefaultException e) {
+            throw e;
+        } catch (Exception e) {
+            System.err.println("서울시 API 호출 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+            throw new DefaultException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private void saveCommercialInfoAsync(String postAddressInfoUuid) {
         try {
             // 좌표 정보 조회
