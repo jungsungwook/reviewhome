@@ -292,4 +292,30 @@ public class CommunityController {
                 response.setStatusCode(200);
                 return ResponseEntity.ok(response);
         }
+        
+        // ==================== 커뮤니티 목록/통계 API ====================
+        
+        @GetMapping("/list")
+        public ResponseEntity<com.memeki.reviewhome.community.dto.CommunityListResponseDto> getAllCommunities(
+                        @RequestParam(defaultValue = "10") int limit) {
+                return ResponseEntity.ok(communityService.getAllCommunities(limit));
+        }
+        
+        @GetMapping("/popular")
+        public ResponseEntity<com.memeki.reviewhome.community.dto.CommunityListResponseDto> getPopularCommunities(
+                        @RequestParam(defaultValue = "10") int limit) {
+                return ResponseEntity.ok(communityService.getPopularCommunities(limit));
+        }
+        
+        @GetMapping("/recent")
+        public ResponseEntity<com.memeki.reviewhome.community.dto.CommunityListResponseDto> getRecentCommunities(
+                        @RequestParam(defaultValue = "10") int limit) {
+                return ResponseEntity.ok(communityService.getRecentCommunities(limit));
+        }
+        
+        @GetMapping("/posts/recent")
+        public ResponseEntity<com.memeki.reviewhome.community.dto.RecentPostResponseDto> getRecentPosts(
+                        @RequestParam(defaultValue = "10") int limit) {
+                return ResponseEntity.ok(communityService.getRecentPosts(limit));
+        }
 }
