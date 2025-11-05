@@ -92,4 +92,43 @@ public class ReviewController {
         response.setStatusCode(200);
         return ResponseEntity.ok(response);
     }
+    
+    // ==================== 타운 커뮤니티 리뷰 API ====================
+    
+    @PostMapping("/town")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ReviewResponseDto> createTownReview(
+            @RequestBody ReviewCreateDto body,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        User user = userService.getUserById(userDetails.getId());
+        body.setUserId(user.getId());
+        reviewService.createTownReview(body);
+        ReviewResponseDto response = new ReviewResponseDto();
+        response.setStatusCode(200);
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/town")
+    public ResponseEntity<ReviewResponseDto> getReviewByTownId(
+            @RequestParam String emdCd,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        List<BuildingReview> result = reviewService.getAllReviewByTownId(emdCd,
+                userDetails != null ? userDetails.getId() : null);
+        ReviewResponseDto response = new ReviewResponseDto();
+        response.setBuildingReviews(result);
+        response.setStatusCode(200);
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/town/reply")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ReivewReplyDto.Response> createTownReviewReply(
+            @RequestBody ReivewReplyDto.Request body,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userDetails) throws Exception {
+        body.setUserId(userDetails.getId());
+        reviewService.createTownReviewReply(body);
+        ReivewReplyDto.Response response = new ReivewReplyDto.Response();
+        response.setStatusCode(200);
+        return ResponseEntity.ok(response);
+    }
 }
