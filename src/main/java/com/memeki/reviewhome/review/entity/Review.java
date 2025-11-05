@@ -42,6 +42,9 @@ public class Review {
     @Column(name = "created_by")
     private long createdBy;
 
+    @Column(name="content")
+    private String content;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

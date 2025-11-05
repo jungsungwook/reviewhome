@@ -21,6 +21,9 @@ import com.memeki.reviewhome.review.repository.BuildingReviewContentRepository;
 import com.memeki.reviewhome.review.repository.ReviewLikeHistoryRepository;
 import com.memeki.reviewhome.review.repository.ReviewRepository;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class ReviewService {
 
@@ -65,8 +68,9 @@ public class ReviewService {
             return "";
         } catch (Exception e) {
             e.printStackTrace();
-            throw new Exception("Review not created");
+            throw new RuntimeException("리뷰가 등록되지않았습니다.");
         }
+
     }
 
     @Transactional
