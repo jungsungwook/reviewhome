@@ -13,4 +13,5 @@ public interface CommunityEnterHistoryRepository extends JpaRepository<Community
     Boolean existsCommunityEnterHistoryByUserIdAndCommunityUuid(long userId, String communityUuid);
     Boolean existsCommunityEnterHistoryByNicknameAndCommunityUuid(String nickname, String communityUuid);
     List<CommunityEnterHistory> findByUserIdOrderByCreatedAtDesc(long userId);
+    List<CommunityEnterHistory> findAllByCommunityUuid(String communityUuid);
 }
