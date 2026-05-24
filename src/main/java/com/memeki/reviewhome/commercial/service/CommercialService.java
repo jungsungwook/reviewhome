@@ -36,9 +36,6 @@ public class CommercialService {
     @Value("${open-api-key}")
     private String openApiKey;
     
-    @Value("${is-open-api-temp}")
-    private boolean isOpenApiTemp;
-    
     private static final int MAX_RADIUS = 2000; // 최대 반경 2000미터
     
     /**
@@ -46,12 +43,6 @@ public class CommercialService {
      */
     @Transactional
     public void fetchAndSaveCommercialInfo(String postAddressInfoUuid, double pointX, double pointY) {
-        // 임시 API 모드일 때는 상권 정보 조회를 스킵
-        if (isOpenApiTemp) {
-            log.info("임시 API 모드 - 상권 정보 조회 스킵 - UUID: {}", postAddressInfoUuid);
-            return;
-        }
-        
         try {
             log.info("상권 정보 조회 시작 - UUID: {}, X: {}, Y: {}", postAddressInfoUuid, pointX, pointY);
             
