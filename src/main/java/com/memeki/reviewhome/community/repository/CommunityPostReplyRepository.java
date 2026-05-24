@@ -16,5 +16,6 @@ public interface CommunityPostReplyRepository extends JpaRepository<CommunityPos
     Integer countCommunityPostReplyByReplyIdAndIsReply(Long replyId, Boolean isReply);
 
     List<CommunityPostReply> findAllByPostId(Long postId);
+    List<CommunityPostReply> findByCreatedByOrderByCreatedAtDesc(long createdBy);
 
 }

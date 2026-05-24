@@ -16,9 +16,7 @@ import org.springframework.web.util.UriBuilder;
 
 import com.memeki.reviewhome.geo.dto.AddressToPointsResponseDto;
 import com.memeki.reviewhome.geo.dto.GeoFeaturesByPostAddressInfoDto;
-import com.memeki.reviewhome.geo.entity.GeoFeatures;
 import com.memeki.reviewhome.geo.entity.GeoLocation;
-import com.memeki.reviewhome.geo.repository.GeoFeaturesRepository;
 import com.memeki.reviewhome.geo.repository.GeoLocationRepository;
 import com.memeki.reviewhome.geo.service.GeoFeaturesService;
 import com.memeki.reviewhome.geo.service.GeoService;
@@ -32,6 +30,7 @@ import com.memeki.reviewhome.postAddress.entity.PostAddress;
 import com.memeki.reviewhome.postAddress.entity.PostAddressInfo;
 import com.memeki.reviewhome.postAddress.repository.PostAddressInfoRepository;
 import com.memeki.reviewhome.postAddress.repository.PostAddressRepository;
+import com.memeki.reviewhome.commercial.service.CommercialService;
 
 /*
  * @Todo
@@ -51,6 +50,9 @@ public class PostAddressService {
 
     @Autowired
     private GeoFeaturesService geoFeaturesService;
+
+    @Autowired
+    private CommercialService commercialService;
 
     private final PostAddressRepository postAddressRepository;
     private final PostAddressInfoRepository postAddressInfoRepository;
@@ -146,7 +148,7 @@ public class PostAddressService {
                                             .queryParam("bjdongCd", addressInfo.getBjdongCd())
                                             .queryParam("bun", addressInfo.getBun())
                                             .queryParam("numOfRows", numOfRows)
-                                            .queryParam("pageNo", pageNo.get()); // 현재 페이지 번호
+                                            .queryParam("pageNo", pageNo.get());
                         
                                     // ji가 null이 아닌 경우에만 쿼리 파라미터 추가
                                     if (addressInfo.getJi() != null) {
@@ -322,6 +324,9 @@ public class PostAddressService {
                     postAddressInfoRepository.delete(savePostAddressInfo);
                     throw new DefaultException(ErrorCode.NOT_FOUND);
                 }
+                
+                // 좌표가 저장된 후 상권 정보 저장
+                saveCommercialInfoAsync(savePostAddressInfo.getUuid());
                 response.setStatusCode(200);
                 response.setUuid(savePostAddressInfo.getUuid());
 
@@ -362,6 +367,9 @@ public class PostAddressService {
                         postAddressInfoRepository.delete(savePostAddressInfo);
                         throw new DefaultException(ErrorCode.NOT_FOUND);
                     }
+                    
+                    // 좌표가 저장된 후 상권 정보 저장
+                    saveCommercialInfoAsync(savePostAddressInfo.getUuid());
                 }
 
                 // 이제 선택한 동의 정보를 가져온다
@@ -410,5 +418,27 @@ public class PostAddressService {
         response.setPoint_y(geoLocation.getPointY());
         return response;
 
+    }
+    
+    /**
+     * 상권 정보를 비동기로 저장하는 메소드
+     * 좌표 정보를 가져와서 상권 API를 호출하여 상권 정보를 저장합니다.
+     */
+    private void saveCommercialInfoAsync(String postAddressInfoUuid) {
+        try {
+            // 좌표 정보 조회
+            GeoLocation geoLocation = geoLocationRepository.findGeoLocationByPostAddressInfoUuid(postAddressInfoUuid);
+            if (geoLocation != null && geoLocation.getPointX() != null && geoLocation.getPointY() != null) {
+                // String 타입의 좌표를 double로 변환
+                double pointX = Double.parseDouble(geoLocation.getPointX());
+                double pointY = Double.parseDouble(geoLocation.getPointY());
+                
+                // 상권 정보 저장 (비동기 처리)
+                commercialService.fetchAndSaveCommercialInfo(postAddressInfoUuid, pointX, pointY);
+            }
+        } catch (Exception e) {
+            // 상권 정보 저장 실패는 전체 프로세스에 영향을 주지 않도록 로그만 남김
+            System.err.println("상권 정보 저장 중 오류 발생 - UUID: " + postAddressInfoUuid + ", 오류: " + e.getMessage());
+        }
     }
 }
