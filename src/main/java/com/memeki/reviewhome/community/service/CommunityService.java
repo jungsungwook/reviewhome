@@ -40,14 +40,12 @@ import com.memeki.reviewhome.community.repository.CommunityPostViewHistoryReposi
 import com.memeki.reviewhome.community.repository.CommunityRepository;
 import com.memeki.reviewhome.global.exception.DefaultException;
 import com.memeki.reviewhome.global.exceptionHandler.ErrorCode;
-import com.memeki.reviewhome.global.security.lib.CookieUtils;
 import com.memeki.reviewhome.postAddress.entity.PostAddressInfo;
 import com.memeki.reviewhome.postAddress.repository.PostAddressInfoRepository;
-import java.util.Optional;
-import javax.servlet.http.Cookie;
+import com.memeki.reviewhome.geo.dto.GeoFeaturesByPostAddressInfoDto;
+import com.memeki.reviewhome.geo.repository.GeoFeaturesRepositoryCustom;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 @Service
 public class CommunityService {
@@ -72,6 +70,9 @@ public class CommunityService {
 
     @Autowired
     private CommunityPostViewHistoryRepository postViewHistoryRepository;
+
+    @Autowired
+    private GeoFeaturesRepositoryCustom geoFeaturesRepositoryCustom;
 
     public CommunityService(
             PostAddressInfoRepository postAddressInfoRepository,
@@ -493,5 +494,168 @@ public class CommunityService {
             throw new DefaultException(ErrorCode.FORBIDDEN);
         }
         communityPostRepository.delete(post);
+    }
+
+    /**
+     * 동네 커뮤니티 조회 또는 생성
+     * emdCd(읍면동 코드)를 기준으로 동네 커뮤니티를 찾거나 없으면 새로 생성
+     */
+    public Community getTownCommunity(String emdCd, String type2, Long userId) throws Exception {
+        List<Community> community = communityRepository.findAllByTypeAndTargetIdAndType2(
+                "town", emdCd, type2);
+        
+        if (community.isEmpty() && type2.equals("default")) {
+            // GeoFeatures에서 동네 정보 조회 (DTO 사용)
+            GeoFeaturesByPostAddressInfoDto geoFeaturesDto = geoFeaturesRepositoryCustom.findByEmdCd(emdCd);
+            if (geoFeaturesDto == null) {
+                throw new DefaultException(ErrorCode.NOT_FOUND);
+            }
+            
+            // 새로운 동네 커뮤니티 생성
+            Community newCommunity = new Community();
+            newCommunity.setGeoFeaturesId(geoFeaturesDto.getId());
+            newCommunity.setGeoFeaturesName(geoFeaturesDto.getEmdKorNm());
+            newCommunity.setTargetId(emdCd);
+            newCommunity.setType("town");
+            newCommunity.setType2("default");
+            newCommunity.setCreatedBy(0);
+            newCommunity.setName(geoFeaturesDto.getEmdKorNm() + " 동네 커뮤니티");
+            newCommunity.setDescription(geoFeaturesDto.getEmdKorNm() + " 지역 주민들의 커뮤니티입니다.");
+            newCommunity.setIsPassword(false);
+            
+            communityRepository.save(newCommunity);
+            return newCommunity;
+        }
+        
+        return community.get(0);
+    }
+    
+    /**
+     * 커뮤니티 목록 조회 (빌딩/타운 구분)
+     */
+    public com.memeki.reviewhome.community.dto.CommunityListResponseDto getAllCommunities(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        
+        List<Community> buildingCommunities = communityRepository.findAllByType("building");
+        List<Community> townCommunities = communityRepository.findAllByType("town");
+        
+        com.memeki.reviewhome.community.dto.CommunityListResponseDto response = 
+                new com.memeki.reviewhome.community.dto.CommunityListResponseDto();
+        
+        response.setBuildingCommunities(convertToListDto(buildingCommunities));
+        response.setTownCommunities(convertToListDto(townCommunities));
+        
+        return response;
+    }
+    
+    /**
+     * 사용자 수가 많은 커뮤니티 조회
+     */
+    public com.memeki.reviewhome.community.dto.CommunityListResponseDto getPopularCommunities(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        
+        List<Community> buildingCommunities = communityRepository.findAllByTypeOrderByUserCountDesc("building", pageable);
+        List<Community> townCommunities = communityRepository.findAllByTypeOrderByUserCountDesc("town", pageable);
+        
+        com.memeki.reviewhome.community.dto.CommunityListResponseDto response = 
+                new com.memeki.reviewhome.community.dto.CommunityListResponseDto();
+        
+        response.setBuildingCommunities(convertToListDto(buildingCommunities));
+        response.setTownCommunities(convertToListDto(townCommunities));
+        
+        return response;
+    }
+    
+    /**
+     * 최근 생성된 커뮤니티 조회
+     */
+    public com.memeki.reviewhome.community.dto.CommunityListResponseDto getRecentCommunities(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        
+        List<Community> buildingCommunities = communityRepository.findAllByTypeOrderByCreatedAtDesc("building", pageable);
+        List<Community> townCommunities = communityRepository.findAllByTypeOrderByCreatedAtDesc("town", pageable);
+        
+        com.memeki.reviewhome.community.dto.CommunityListResponseDto response = 
+                new com.memeki.reviewhome.community.dto.CommunityListResponseDto();
+        
+        response.setBuildingCommunities(convertToListDto(buildingCommunities));
+        response.setTownCommunities(convertToListDto(townCommunities));
+        
+        return response;
+    }
+    
+    /**
+     * 최근 작성된 게시글 조회
+     */
+    public com.memeki.reviewhome.community.dto.RecentPostResponseDto getRecentPosts(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        
+        List<CommunityPost> buildingPosts = communityPostRepository.findRecentPostsByCommunityType("building", pageable);
+        List<CommunityPost> townPosts = communityPostRepository.findRecentPostsByCommunityType("town", pageable);
+        
+        com.memeki.reviewhome.community.dto.RecentPostResponseDto response = 
+                new com.memeki.reviewhome.community.dto.RecentPostResponseDto();
+        
+        response.setBuildingPosts(convertToPostListDto(buildingPosts));
+        response.setTownPosts(convertToPostListDto(townPosts));
+        
+        return response;
+    }
+    
+    // DTO 변환 헬퍼 메소드
+    private List<com.memeki.reviewhome.community.dto.CommunityListResponseDto.CommunityItemDto> convertToListDto(List<Community> communities) {
+        return communities.stream().map(community -> {
+            com.memeki.reviewhome.community.dto.CommunityListResponseDto.CommunityItemDto dto = 
+                    new com.memeki.reviewhome.community.dto.CommunityListResponseDto.CommunityItemDto();
+            dto.setUuid(community.getUuid());
+            dto.setType(community.getType());
+            dto.setName(community.getName());
+            dto.setDescription(community.getDescription());
+            dto.setGeoFeaturesName(community.getGeoFeaturesName());
+            
+            // 사용자 수 조회
+            Integer userCount = communityEnterHistoryRepository.countCommunityEnterHistoryByCommunityUuid(community.getUuid());
+            dto.setUserCount(userCount != null ? userCount : 0);
+            
+            // 날짜 포맷
+            dto.setCreatedAt(community.getCreatedAt().toString());
+            
+            return dto;
+        }).collect(Collectors.toList());
+    }
+    
+    private List<com.memeki.reviewhome.community.dto.RecentPostResponseDto.PostItemDto> convertToPostListDto(List<CommunityPost> posts) {
+        return posts.stream().map(post -> {
+            com.memeki.reviewhome.community.dto.RecentPostResponseDto.PostItemDto dto = 
+                    new com.memeki.reviewhome.community.dto.RecentPostResponseDto.PostItemDto();
+            dto.setPostId(post.getId());
+            dto.setTitle(post.getTitle());
+            dto.setContent(post.getContent());
+            dto.setCreatedBy(post.getCreatedBy());
+            dto.setCreatedAt(post.getCreatedAt().toString());
+            
+            // 좋아요, 조회수, 댓글 수
+            Long likeCount = postLikeHistoryRepository.countByPostId(post.getId());
+            Long viewCount = postViewHistoryRepository.countByPostId(post.getId());
+            Integer replyCount = postReplyRepository.countCommunityPostReplyByPostId(post.getId());
+            
+            dto.setLikeCount(likeCount != null ? likeCount : 0L);
+            dto.setViewCount(viewCount != null ? viewCount : 0L);
+            dto.setReplyCount(replyCount != null ? Long.valueOf(replyCount) : 0L);
+            
+            // 커뮤니티 정보
+            Community community = communityRepository.findCommunityByUuid(post.getCommunityUuid());
+            if (community != null) {
+                com.memeki.reviewhome.community.dto.RecentPostResponseDto.CommunityInfo communityInfo = 
+                        new com.memeki.reviewhome.community.dto.RecentPostResponseDto.CommunityInfo();
+                communityInfo.setUuid(community.getUuid());
+                communityInfo.setName(community.getName());
+                communityInfo.setType(community.getType());
+                communityInfo.setGeoFeaturesName(community.getGeoFeaturesName());
+                dto.setCommunity(communityInfo);
+            }
+            
+            return dto;
+        }).collect(Collectors.toList());
     }
 }

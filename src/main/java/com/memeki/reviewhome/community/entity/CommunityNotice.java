@@ -1,4 +1,4 @@
-package com.memeki.reviewhome.review.entity;
+package com.memeki.reviewhome.community.entity;
 
 import java.time.LocalDateTime;
 
@@ -13,37 +13,38 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * 커뮤니티 공지사항 엔티티
+ */
 @Entity
-@Table(name = "review")
-@SQLDelete(sql = "UPDATE review SET is_deleted = true WHERE id = ?")
+@Table(name = "community_notice")
+@SQLDelete(sql = "UPDATE community_notice SET is_deleted = true WHERE id = ?")
 @Where(clause = "is_deleted = false")
 @Getter
 @Setter
 @ToString()
 @NoArgsConstructor
-public class Review {
+public class CommunityNotice {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "community_uuid")
+    private String communityUuid;
 
-    /*
-     * 호환성을 위해 target_id를 String으로 선언하였으니 형변환에 유의바람.
-     */
-    @Column(name = "target_id")
-    private String targetId;
+    @Column(name = "title")
+    private String title;
 
-    @Column(name = "reply_id", nullable = true)
-    private Integer replyId;
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content;
+
+    @Column(name = "is_pinned")
+    @ColumnDefault("false")
+    private Boolean isPinned = false;
 
     @Column(name = "created_by")
     private long createdBy;
-
-    @Column(name="content")
-    private String content;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -69,7 +70,5 @@ public class Review {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    @Transient
-    private int likeCount;
 }
+

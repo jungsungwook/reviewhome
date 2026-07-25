@@ -1,4 +1,4 @@
-package com.memeki.reviewhome.review.entity;
+package com.memeki.reviewhome.community.entity;
 
 import java.time.LocalDateTime;
 
@@ -13,37 +13,49 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * 커뮤니티 관리자 신청 엔티티
+ */
 @Entity
-@Table(name = "review")
-@SQLDelete(sql = "UPDATE review SET is_deleted = true WHERE id = ?")
+@Table(name = "community_admin_request")
+@SQLDelete(sql = "UPDATE community_admin_request SET is_deleted = true WHERE id = ?")
 @Where(clause = "is_deleted = false")
 @Getter
 @Setter
 @ToString()
 @NoArgsConstructor
-public class Review {
+public class CommunityAdminRequest {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "community_uuid")
+    private String communityUuid;
+
+    @Column(name = "user_id")
+    private long userId;
+
+    @Column(name = "nickname")
+    private String nickname;
 
     /*
-     * 호환성을 위해 target_id를 String으로 선언하였으니 형변환에 유의바람.
+     * 상태: pending(대기), approved(승인), rejected(거절)
      */
-    @Column(name = "target_id")
-    private String targetId;
+    @Column(name = "status")
+    private String status;
 
-    @Column(name = "reply_id", nullable = true)
-    private Integer replyId;
+    @Column(name = "request_message")
+    private String requestMessage;
 
-    @Column(name = "created_by")
-    private long createdBy;
+    @Column(name = "response_message")
+    private String responseMessage;
 
-    @Column(name="content")
-    private String content;
+    @Column(name = "processed_by")
+    private Long processedBy;
+
+    @Column(name = "processed_at")
+    private LocalDateTime processedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -63,13 +75,14 @@ public class Review {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.status == null) {
+            this.status = "pending";
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    @Transient
-    private int likeCount;
 }
+

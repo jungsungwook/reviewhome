@@ -1,4 +1,4 @@
-package com.memeki.reviewhome.review.entity;
+package com.memeki.reviewhome.community.entity;
 
 import java.time.LocalDateTime;
 
@@ -13,37 +13,37 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * 커뮤니티 관리자 엔티티
+ */
 @Entity
-@Table(name = "review")
-@SQLDelete(sql = "UPDATE review SET is_deleted = true WHERE id = ?")
+@Table(name = "community_admin")
+@SQLDelete(sql = "UPDATE community_admin SET is_deleted = true WHERE id = ?")
 @Where(clause = "is_deleted = false")
 @Getter
 @Setter
 @ToString()
 @NoArgsConstructor
-public class Review {
+public class CommunityAdmin {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "community_uuid")
+    private String communityUuid;
 
-    /*
-     * 호환성을 위해 target_id를 String으로 선언하였으니 형변환에 유의바람.
-     */
-    @Column(name = "target_id")
-    private String targetId;
+    @Column(name = "user_id")
+    private long userId;
 
-    @Column(name = "reply_id", nullable = true)
-    private Integer replyId;
+    @Column(name = "nickname")
+    private String nickname;
 
-    @Column(name = "created_by")
-    private long createdBy;
+    @Column(name = "appointed_by")
+    private Long appointedBy;
 
-    @Column(name="content")
-    private String content;
+    @Column(name = "appointed_at")
+    private LocalDateTime appointedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -63,13 +63,14 @@ public class Review {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.appointedAt == null) {
+            this.appointedAt = now;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    @Transient
-    private int likeCount;
 }
+
