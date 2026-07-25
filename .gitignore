@@ -38,3 +38,5 @@ out/
 
 # 어떤 경로든 *.properties 파일은 무시합니다.
 **/*.properties
+libs/jai_codec-1.1.3.jar
+libs/jai_core-1.1.3.jar
